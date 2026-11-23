@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TgWsPulse" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/pulse_background</item>
+        <item name="android:colorPrimary">@color/pulse_background</item>
+        <item name="android:colorAccent">@color/pulse_online</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/pulse_background</item>
+    </style>
+</resources>

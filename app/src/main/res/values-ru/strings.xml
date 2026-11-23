@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TG Pulse</string>
+    <string name="app_tagline">Локальный MTProto-прокси для Telegram</string>
+
+    <string name="status_off">Выключено</string>
+    <string name="status_connecting">Подключение</string>
+    <string name="status_online">Подключено</string>
+    <string name="status_error">Ошибка</string>
+    <string name="hint_off">Нажмите, чтобы запустить локальный прокси</string>
+    <string name="hint_connecting">Открываем локальный порт и проверяем маршрут</string>
+    <string name="hint_online">Слушаем 127.0.0.1. Telegram может подключаться</string>
+    <string name="hint_error">Прокси остановился</string>
+
+    <string name="uptime_title">Время работы</string>
+    <string name="traffic_title">Трафик</string>
+    <string name="traffic_up_down">↑ %1$s   ↓ %2$s</string>
+    <string name="route_title">Маршрут</string>
+    <string name="route_ws">WebSocket</string>
+    <string name="route_cloudflare">Cloudflare</string>
+    <string name="route_direct">Напрямую</string>
+    <string name="details_title">Данные прокси</string>
+    <string name="label_address">Адрес</string>
+    <string name="label_port">Порт</string>
+    <string name="label_secret">Секрет</string>
+    <string name="secret_reveal_hint">Нажмите на секрет, чтобы показать или скрыть его</string>
+    <string name="action_open_telegram">Открыть в Telegram</string>
+    <string name="action_copy_link">Копировать ссылку</string>
+    <string name="action_copied">Скопировано</string>
+    <string name="action_regenerate">Создать новый секрет</string>
+    <string name="action_refresh">Обновить</string>
+    <string name="action_share_journal">Поделиться журналом</string>
+    <string name="action_source">Исходный код ядра Flowseal</string>
+    <string name="action_licenses">Лицензия (GPL-3.0)</string>
+    <string name="action_battery">Настройки оптимизации батареи</string>
+
+    <string name="nav_proxy">Прокси</string>
+    <string name="nav_settings">Настройки</string>
+    <string name="nav_diagnostics">Диагностика</string>
+
+    <string name="section_proxy">Локальный прокси</string>
+    <string name="setting_port">Порт</string>
+    <string name="setting_port_hint">От %1$d до %2$d. Применяется после перезапуска</string>
+    <string name="setting_pool">Прогретые соединения</string>
+    <string name="setting_pool_hint">Соединения к Telegram, подготовленные заранее. Больше значение: быстрее старт, больше расход батареи</string>
+    <string name="section_cloudflare">Маршрут через Cloudflare</string>
+    <string name="setting_cf_enabled">Использовать Cloudflare как резерв</string>
+    <string name="setting_cf_enabled_hint">Используется, когда прямой маршрут WebSocket не работает</string>
+    <string name="setting_custom_cf">Свои домены Cloudflare</string>
+    <string name="setting_custom_cf_hint">Заменить общий список доменов Cloudflare</string>
+    <string name="setting_custom_cf_domains">Домены через запятую</string>
+    <string name="setting_worker">Домен Cloudflare Worker</string>
+    <string name="setting_worker_hint">Ваш Worker пробуется первым. Через запятую</string>
+    <string name="section_background">Фон</string>
+    <string name="setting_autostart">Запуск после перезагрузки</string>
+    <string name="setting_autostart_hint">По умолчанию выключено. Запускает прокси при включении телефона</string>
+    <string name="section_secret">Секрет</string>
+    <string name="secret_regenerate_hint">Старая ссылка перестанет работать. После создания секрета обновите данные в Telegram</string>
+    <string name="regenerate_title">Создать новый секрет?</string>
+    <string name="regenerate_text">Telegram нужно передать новую ссылку. Старый секрет перестанет приниматься</string>
+    <string name="restart_note">Изменения применятся после перезапуска прокси</string>
+    <string name="section_about">О приложении</string>
+    <string name="about_version">Версия</string>
+    <string name="about_core">Ядро Flowseal</string>
+    <string name="about_credits">Исходное ядро прокси — Flowseal (MIT). Android-приложение — GPL-3.0. Шрифты — SIL OFL 1.1.</string>
+
+    <string name="diag_state">Состояние</string>
+    <string name="diag_port">Локальный порт</string>
+    <string name="diag_port_ok">Отвечает</string>
+    <string name="diag_port_bad">Не отвечает</string>
+    <string name="diag_port_unknown">Ещё не проверен</string>
+    <string name="diag_active">Активных соединений</string>
+    <string name="diag_journal">Проблемы за последние 24 часа</string>
+    <string name="diag_loading">Читаем журнал…</string>
+    <string name="diag_no_journal">Журнала пока нет. Запустите прокси хотя бы раз</string>
+    <string name="diag_no_problems">Предупреждений и ошибок нет</string>
+    <string name="diag_share_hint">В журнале нет секрета и имён доменов Worker</string>
+
+    <string name="error_start_failed">Не удалось запустить: %1$s</string>
+    <string name="error_engine_stopped">Ядро прокси неожиданно остановилось</string>
+    <string name="error_port_unreachable">Локальный порт перестал отвечать</string>
+
+    <string name="notification_channel_name">Состояние прокси</string>
+    <string name="notification_starting">Запускаем прокси…</string>
+    <string name="notification_running">Прокси работает</string>
+    <string name="notification_stopping">Останавливаем прокси…</string>
+    <string name="notification_error">Ошибка прокси: %1$s</string>
+    <string name="notification_traffic">Трафик %1$s · активных %2$d</string>
+    <string name="notification_restart">Перезапуск</string>
+    <string name="notification_disconnect">Остановить</string>
+
+    <string name="telegram_choose">Выберите приложение, которое получит прокси</string>
+    <string name="telegram_client_unavailable">Этот клиент Telegram недоступен. Выберите другой</string>
+    <string name="telegram_not_found">Telegram не найден. Установите его или скопируйте ссылку</string>
+    <string name="telegram_open_failed">Не удалось открыть Telegram</string>
+    <string name="share_log">Поделиться журналом</string>
+
+    <string name="shortcut_start">Запустить прокси</string>
+    <string name="shortcut_stop">Остановить прокси</string>
+    <string name="shortcut_toggle">Переключить прокси</string>
+    <string name="shortcut_confirm">Разрешить этому приложению менять прокси Telegram?</string>
+</resources>

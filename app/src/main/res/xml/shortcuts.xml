@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the launcher icon. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_start"
+        android:shortcutShortLabel="@string/shortcut_start">
+        <intent
+            android:action="com.tgwsmobile.proxy.action.START"
+            android:targetPackage="com.tgwsmobile.proxy"
+            android:targetClass="com.tgwsmobile.proxy.LauncherShortcutActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="stop"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_stop"
+        android:shortcutShortLabel="@string/shortcut_stop">
+        <intent
+            android:action="com.tgwsmobile.proxy.action.STOP"
+            android:targetPackage="com.tgwsmobile.proxy"
+            android:targetClass="com.tgwsmobile.proxy.LauncherShortcutActivity" />
+    </shortcut>
+</shortcuts>
