@@ -19,7 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -140,7 +140,7 @@ fun PowerOrb(
             },
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.matchParentSize()) {
+        Canvas(Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2f
             val ring = radius * 0.82f
             drawCircle(
@@ -213,7 +213,7 @@ private fun ConnectingSweep(accent: Color) {
         animationSpec = infiniteRepeatable(tween(1500, easing = Motion.Standard), RepeatMode.Restart),
         label = "orb-echo",
     )
-    Canvas(Modifier.matchParentSize()) {
+    Canvas(Modifier.fillMaxSize()) {
         val radius = size.minDimension / 2f
         val ring = radius * 0.82f
         drawCircle(
