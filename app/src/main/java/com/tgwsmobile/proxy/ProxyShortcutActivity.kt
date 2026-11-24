@@ -46,7 +46,7 @@ open class ProxyShortcutActivity : ComponentActivity() {
         }
     }
 
-    private fun applyAction(action: String) {
+    private fun applyAction(action: String?) {
         lifecycleScope.launch {
             val running = ProxyService.isRunning.value || ProxyService.isStarting.value
             when (action) {

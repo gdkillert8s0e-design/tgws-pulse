@@ -58,7 +58,7 @@ object TelegramConnector {
         }
         AlertDialog.Builder(context)
             .setTitle(R.string.telegram_choose)
-            .setItems(clients.map { "${it.loadLabel(pm)}" }.toTypedArray()) { _, index ->
+            .setItems(clients.map { it.loadLabel(pm) }.toTypedArray()) { _, index ->
                 val packageName = clients[index].activityInfo.packageName
                 launch(packageName, signer(pm, packageName))
             }
