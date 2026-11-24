@@ -35,3 +35,10 @@
 Android-часть компилируется только в CI, так как Android и Compose-библиотеки
 недоступны из моего окружения. Если появятся новые ошибки компиляции, пришлите первые
 30 строк из лога шага `JVM unit tests`.
+
+## Вторая ошибка CI (шаг `Run android-actions/setup-android@v3`)
+
+Внешний action `android-actions/setup-android@v3` сам вызывал `sdkmanager tools`,
+а пакета `tools` больше нет, поэтому шаг падал до Gradle. Action удалён: SDK уже установлен
+на раннере, теперь лицензии принимаются и ставятся только нужные пакеты собственным шагом.
+Также обновлены `actions/checkout` и `actions/setup-java` до v5 (предупреждения о Node 20 / устаревшем setup-java).
