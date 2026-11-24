@@ -52,6 +52,10 @@ class ProxyService : Service() {
             preparing.value = value
         }
     private var stopping = false
+        set(value) {
+            field = value
+            disconnectingState.value = value
+        }
     private var pendingStart: ProxyConfiguration? = null
     private var lastCommandId = 0
     private var needsEngineCleanup = true
@@ -90,6 +94,9 @@ class ProxyService : Service() {
         /** Consecutive failed probes before the service stops itself and reports an error. */
         private const val PROBE_FAILURES_BEFORE_STOP = 3
 
+        /** One failed probe is noise; health only drops after this many in a row. */
+        private const val PROBE_FAILURES_UNREACHABLE = 2
+
         private val preparing = MutableStateFlow(false)
         val isStarting: StateFlow<Boolean> = preparing
 
@@ -98,6 +105,10 @@ class ProxyService : Service() {
 
         private val connection = MutableStateFlow<ActiveProxyConnection?>(null)
         val activeConnection: StateFlow<ActiveProxyConnection?> = connection
+
+        private val disconnectingState = MutableStateFlow(false)
+        /** True from the moment a stop starts until its cleanup finishes. */
+        val isStopping: StateFlow<Boolean> = disconnectingState
 
         private val health = MutableStateFlow(PortHealth.Unknown)
         val portHealth: StateFlow<PortHealth> = health
@@ -266,8 +277,8 @@ class ProxyService : Service() {
                 health.value = PortHealth.Listening
             } else {
                 failures++
-                health.value = PortHealth.Unreachable
                 if (failures == 1) journal("warn", "local port ${config.port} does not answer")
+                if (failures >= PROBE_FAILURES_UNREACHABLE) health.value = PortHealth.Unreachable
                 if (failures >= PROBE_FAILURES_BEFORE_STOP) {
                     journal("error", "local port stopped answering; stopping")
                     errorState.value = getString(R.string.error_port_unreachable)
@@ -341,7 +352,8 @@ class ProxyService : Service() {
             delay(NETWORK_SETTLE_MS)
             if (!running.value) return@launch
             holdAwake(TRAFFIC_WAKE_MS)
-            health.value = PortHealth.Unknown
+            // Keep the last known health while probing: a network switch must not
+            // flip the UI back to 'connecting' and replay the orb animation.
             val reset = withContext(Dispatchers.IO) {
                 runCatching {
                     engine?.note("info", "network: $reason")

@@ -252,19 +252,3 @@ private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChang
 private fun PressableTextButton(text: String, onClick: () -> Unit) {
     PressablePill(text = text, onClick = onClick, primary = false, modifier = Modifier.fillMaxWidth())
 }
-
-private fun openBatterySettings(context: Context) {
-    try {
-        context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (_: ActivityNotFoundException) {
-        // Some vendors remove this screen; the user can still find it in system settings.
-    }
-}
-
-private fun openUrl(context: Context, url: String) {
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (_: ActivityNotFoundException) {
-        // No browser installed; nothing to show.
-    }
-}

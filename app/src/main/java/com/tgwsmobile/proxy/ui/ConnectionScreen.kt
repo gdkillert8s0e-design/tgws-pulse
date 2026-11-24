@@ -78,7 +78,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private fun accentFor(state: OrbState): Color = when (state) {
-    OrbState.Off -> Palette.Idle
+    OrbState.Off, OrbState.Disconnecting -> Palette.Idle
     OrbState.Connecting -> Palette.Connecting
     OrbState.Online -> Palette.Online
     OrbState.Error -> Palette.Error
@@ -99,6 +99,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
     val stats by ProxyService.stats.collectAsStateWithLifecycle()
     val startedAt by ProxyService.startedAt.collectAsStateWithLifecycle()
     val error by ProxyService.lastError.collectAsStateWithLifecycle()
+    val stopping by ProxyService.isStopping.collectAsStateWithLifecycle()
     val connection by ProxyService.activeConnection.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { store.ensureSecret() }
@@ -106,6 +107,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
     // "Connected" is shown only when the engine runs AND the local port answers.
     val serving = running && health == PortHealth.Listening
     val orbState = when {
+        stopping -> OrbState.Disconnecting
         starting -> OrbState.Connecting
         running && serving -> OrbState.Online
         running -> OrbState.Connecting
@@ -210,7 +212,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     PowerOrb(
                         state = orbState,
-                        enabled = !starting,
+                        enabled = !starting && !stopping,
                         onClick = ::onOrbTap,
                     )
                     AnimatedContent(
@@ -231,6 +233,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                                         OrbState.Connecting -> R.string.status_connecting
                                         OrbState.Online -> R.string.status_online
                                         OrbState.Error -> R.string.status_error
+                                        OrbState.Disconnecting -> R.string.status_disconnecting
                                     }
                                 ),
                                 style = MaterialTheme.typography.headlineSmall,
@@ -242,6 +245,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                                     OrbState.Connecting -> stringResource(R.string.hint_connecting)
                                     OrbState.Online -> stringResource(R.string.hint_online)
                                     OrbState.Error -> errorText
+                                    OrbState.Disconnecting -> stringResource(R.string.hint_disconnecting)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Palette.TextMuted,
@@ -325,7 +329,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                         primary = false,
                         onClick = {
                             connection?.let {
-                                copyLink(context, ProxyLink.uri(it.host, it.port, it.secret))
+                                copyTgLink(context, it)
                                 copied = true
                             }
                         },
@@ -337,10 +341,6 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
     }
 }
 
-private fun copyLink(context: Context, link: String) {
-    context.getSystemService(ClipboardManager::class.java)
-        ?.setPrimaryClip(ClipData.newPlainText("tg://proxy", link))
-}
 
 /** Staggered entrance: each block fades and rises a little after the previous one. */
 @Composable

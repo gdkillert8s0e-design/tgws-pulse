@@ -6,6 +6,8 @@
     <string name="status_off">Off</string>
     <string name="status_connecting">Connecting</string>
     <string name="status_online">Connected</string>
+    <string name="status_disconnecting">Disconnecting</string>
+    <string name="hint_disconnecting">Closing the local listener</string>
     <string name="status_error">Error</string>
     <string name="hint_off">Tap to start the local proxy</string>
     <string name="hint_connecting">Opening the local listener and checking the route</string>
