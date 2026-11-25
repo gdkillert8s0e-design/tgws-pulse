@@ -8,6 +8,9 @@
     <string name="status_online">Connected</string>
     <string name="status_disconnecting">Disconnecting</string>
     <string name="hint_disconnecting">Closing the local listener</string>
+    <string name="section_style">Style</string>
+    <string name="setting_neon">Neon style</string>
+    <string name="setting_neon_hint">Pink accent and glow. Classic is the default</string>
     <string name="status_error">Error</string>
     <string name="hint_off">Tap to start the local proxy</string>
     <string name="hint_connecting">Opening the local listener and checking the route</string>

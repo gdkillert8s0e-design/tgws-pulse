@@ -59,6 +59,12 @@ object Springs {
 
     /** Size morphs between two shapes (dock to card). */
     val MorphDp: SpringSpec<Dp> = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow)
+
+    /** Indicator following the finger: close, almost no lag. */
+    val Follow: SpringSpec<Float> = spring(dampingRatio = 0.9f, stiffness = Spring.StiffnessMedium)
+
+    /** Pull onto the nearest tab after release: a small, physical overshoot. */
+    val Settle: SpringSpec<Float> = spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessMedium)
 }
 
 /** True when the system's animation scale is 0 (Developer options / accessibility "Remove animations"). */

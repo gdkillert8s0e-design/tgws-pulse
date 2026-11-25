@@ -22,6 +22,7 @@ data class ProxySettings(
     val customCfDomain: String = "",
     val cfWorkerDomain: String = "",
     val autostart: Boolean = false,
+    val neonStyle: Boolean = false,
 )
 
 class SettingsStore(private val context: Context) {
@@ -46,6 +47,7 @@ class SettingsStore(private val context: Context) {
         val WORKER = stringPreferencesKey("cf_worker_domain")
         val AUTOSTART = booleanPreferencesKey("autostart")
         val SECRET_SEALED = stringPreferencesKey("secret_sealed")
+        val NEON = booleanPreferencesKey("neon_style")
     }
 
     private fun Preferences.toSettings() = ProxySettings(
@@ -56,6 +58,7 @@ class SettingsStore(private val context: Context) {
         customCfDomain = this[Keys.CUSTOM_CF].orEmpty(),
         cfWorkerDomain = this[Keys.WORKER].orEmpty(),
         autostart = this[Keys.AUTOSTART] ?: false,
+        neonStyle = this[Keys.NEON] ?: false,
     )
 
     val settings: Flow<ProxySettings> = context.proxyDataStore.data.map { it.toSettings() }
@@ -78,6 +81,7 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.CUSTOM_CF] = next.customCfDomain.trim()
             prefs[Keys.WORKER] = next.cfWorkerDomain.trim()
             prefs[Keys.AUTOSTART] = next.autostart
+            prefs[Keys.NEON] = next.neonStyle
         }
     }
 

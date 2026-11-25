@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,36 +42,21 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.withFrameNanos
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.sin
 
 /** Real connection state, mapped from ProxyService. Nothing here is simulated. */
 enum class OrbState { Off, Connecting, Online, Error, Disconnecting }
 
 private val DEG_TO_RAD = (PI / 180.0).toFloat()
-
-/** Speed of the satellite's orbit while connecting. */
 private const val ORBIT_DEG_PER_SEC = 150f
-
-/**
- * How far the satellite swings toward the ring while connecting (0..1 of the gap).
- * It pulses in and out, so the circle reads as searching, not as stuck.
- */
 private const val APPROACH_SHARE = 0.35f
 
 /**
- * The orb's motion is built from ONE fusion value, not from separate restarting
- * animations:
- *
- *  - [fusion] is 0 when the satellite circle is apart and 1 when it has merged into
- *    the main ring. It only ever moves with animateTo, which starts from the current
- *    value. That is why it never jumps back: nothing snaps it except the reset to Off.
- *  - The satellite's orbit angle advances only while connecting and freezes otherwise.
- *    Freezing (not deleting) the satellite means leaving the connecting state never
- *    removes a composable mid-motion.
- *  - Recomposition does not restart anything. The effects are keyed on the state
- *    itself, and only the draw phase reads the animated values.
+ * Motion is built from one fusion value (0 apart, 1 fused), one orbit angle and one
+ * bloom value. Each is moved only with animateTo from its current value, so nothing
+ * jumps back. The bloom runs once, when the connection becomes Online.
  */
 @Composable
 fun PowerOrb(
@@ -85,18 +71,15 @@ fun PowerOrb(
     val pressed by interaction.collectIsPressedAsState()
 
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed && enabled) 0.94f else 1f,
+        targetValue = if (pressed && enabled) 0.95f else 1f,
         animationSpec = Springs.Press,
         label = "orb-press",
     )
-
     val accent by animateColorAsState(
         targetValue = accentFor(state),
         animationSpec = tween(Motion.BASE, easing = Motion.Standard),
         label = "orb-accent",
     )
-
-    // Satellite is present while connecting, failing or disconnecting. Off hides it.
     val presence by animateFloatAsState(
         targetValue = if (state == OrbState.Off) 0f else 1f,
         animationSpec = tween(Motion.BASE, easing = Motion.Standard),
@@ -106,21 +89,23 @@ fun PowerOrb(
     val fusionTarget = if (state == OrbState.Online) 1f else 0f
     val fusion = remember { Animatable(0f) }
     val orbit = remember { mutableFloatStateOf(0f) }
+    val bloom = remember { Animatable(1f) }
     val shake = remember { Animatable(0f) }
 
-    // Fusion: one target, animated from wherever it currently is. Changing between
-    // states that share a target (Connecting, Disconnecting, Off) does not restart it.
     LaunchedEffect(fusionTarget, reduce) {
-        if (reduce) {
-            fusion.snapTo(fusionTarget)
-        } else if (fusionTarget == 1f) {
-            fusion.animateTo(1f, Springs.Fuse)
-        } else {
-            fusion.animateTo(0f, tween(Motion.BASE, easing = Motion.Exit))
+        if (reduce) fusion.snapTo(fusionTarget)
+        else if (fusionTarget == 1f) fusion.animateTo(1f, Springs.Fuse)
+        else fusion.animateTo(0f, tween(Motion.BASE, easing = Motion.Exit))
+    }
+
+    // Power-on bloom: a single pulse of light when the proxy starts serving.
+    LaunchedEffect(state) {
+        if (state == OrbState.Online && !reduce) {
+            bloom.snapTo(0f)
+            bloom.animateTo(1f, tween(900, easing = Motion.Expressive))
         }
     }
 
-    // Orbit: advances only while connecting. Stopping keeps the last angle.
     val connecting = state == OrbState.Connecting
     LaunchedEffect(connecting, reduce) {
         if (connecting && !reduce) {
@@ -137,7 +122,6 @@ fun PowerOrb(
         }
     }
 
-    // Error: a single damped shake. It runs only when the state becomes Error.
     LaunchedEffect(state) {
         if (state == OrbState.Error && !reduce) {
             shake.animateTo(
@@ -145,22 +129,21 @@ fun PowerOrb(
                 keyframes {
                     durationMillis = 420
                     0f at 0
-                    -14f at 60
-                    14f at 140
-                    -8f at 220
-                    6f at 300
+                    -12f at 60
+                    12f at 140
+                    -7f at 220
+                    5f at 300
                     0f at 420
                 },
             )
         }
     }
 
-    // Breathing exists only while connected, and is skipped for reduced motion.
     val breath: Float = if (state == OrbState.Online && !reduce) {
         val transition = rememberInfiniteTransition(label = "orb-breath")
         val scale by transition.animateFloat(
             initialValue = 1f,
-            targetValue = 1.03f,
+            targetValue = 1.025f,
             animationSpec = infiniteRepeatable(tween(2800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
             label = "orb-breath-scale",
         )
@@ -171,46 +154,40 @@ fun PowerOrb(
 
     Box(
         modifier = modifier
-            .size(252.dp)
+            .size(196.dp)
             .graphicsLayer {
                 translationX = shake.value
                 scaleX = pressScale
                 scaleY = pressScale
             }
-            .clickable(
-                enabled = enabled,
-                interactionSource = interaction,
-                indication = null,
-            ) {
+            .clickable(enabled = enabled, interactionSource = interaction, indication = null) {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
             },
         contentAlignment = Alignment.Center,
     ) {
-        // Everything below reads animated values only inside the draw phase, so
-        // animating does not recompose the tree.
         Canvas(Modifier.fillMaxSize()) {
             val m = fusion.value
             val radius = size.minDimension / 2f
             val ring = radius * 0.82f
             val outer = radius * 0.98f
+            val glowBoost = if (Palette.neon) 0.16f else 0f
 
-            // The satellite swings toward the ring while connecting, then fusion takes it in.
             val angleDeg = orbit.floatValue
             val wobble = 0.5f - 0.5f * cos(angleDeg * DEG_TO_RAD * 2f)
             val approach = m + (1f - m) * APPROACH_SHARE * wobble
             val satelliteRadius = outer + (ring - outer) * approach
             val a = angleDeg * DEG_TO_RAD
             val sx = center.x + cos(a) * satelliteRadius
-            val sy = center.y + kotlin.math.sin(a) * satelliteRadius
+            val sy = center.y + sin(a) * satelliteRadius
 
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(accent.copy(alpha = 0.26f + 0.10f * m), Color.Transparent),
+                    colors = listOf(accent.copy(alpha = 0.22f + 0.10f * m + glowBoost), Color.Transparent),
                     center = center,
-                    radius = radius,
+                    radius = ring,
                 ),
-                radius = radius,
+                radius = ring,
                 center = center,
             )
             drawCircle(
@@ -219,7 +196,6 @@ fun PowerOrb(
                 center = center,
                 style = Stroke(width = 1.dp.toPx()),
             )
-            // The ring draws itself in as the satellite fuses, and draws back out on disconnect.
             if (m > 0f) {
                 drawArc(
                     color = accent,
@@ -228,14 +204,26 @@ fun PowerOrb(
                     useCenter = false,
                     topLeft = Offset(center.x - ring, center.y - ring),
                     size = Size(ring * 2, ring * 2),
-                    style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round),
+                    style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
                 )
             }
+
+            // Bloom: an expanding light ring that fades, only while it runs.
+            val b = bloom.value
+            if (b < 1f) {
+                drawCircle(
+                    color = accent.copy(alpha = (1f - b) * 0.6f),
+                    radius = ring * (0.92f + 0.45f * b),
+                    center = center,
+                    style = Stroke(width = 2.dp.toPx()),
+                )
+            }
+
             val satelliteAlpha = (1f - m) * presence
             if (satelliteAlpha > 0.01f) {
                 drawCircle(
                     color = accent.copy(alpha = satelliteAlpha),
-                    radius = 8.dp.toPx(),
+                    radius = 6.dp.toPx(),
                     center = Offset(sx, sy),
                 )
             }
@@ -243,10 +231,11 @@ fun PowerOrb(
 
         Box(
             modifier = Modifier
-                .size(158.dp)
+                .size(124.dp)
                 .graphicsLayer {
-                    scaleX = breath
-                    scaleY = breath
+                    val scale = breath * (0.86f + 0.14f * bloom.value)
+                    scaleX = scale
+                    scaleY = scale
                 }
                 .clip(CircleShape)
                 .background(Brush.verticalGradient(listOf(Palette.SurfaceRaised, Palette.Surface)))
@@ -257,7 +246,7 @@ fun PowerOrb(
                 imageVector = Icons.Rounded.PowerSettingsNew,
                 contentDescription = null,
                 tint = accent,
-                modifier = Modifier.size(58.dp),
+                modifier = Modifier.size(46.dp),
             )
         }
     }

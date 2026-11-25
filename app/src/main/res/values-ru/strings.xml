@@ -8,6 +8,9 @@
     <string name="status_online">Подключено</string>
     <string name="status_disconnecting">Отключение</string>
     <string name="hint_disconnecting">Закрываем локальный порт</string>
+    <string name="section_style">Оформление</string>
+    <string name="setting_neon">Неоновый стиль</string>
+    <string name="setting_neon_hint">Розовый акцент и свечение. По умолчанию — классический</string>
     <string name="status_error">Ошибка</string>
     <string name="hint_off">Нажмите, чтобы запустить локальный прокси</string>
     <string name="hint_connecting">Открываем локальный порт и проверяем маршрут</string>

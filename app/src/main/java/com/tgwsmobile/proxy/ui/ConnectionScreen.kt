@@ -177,9 +177,9 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
-                .padding(top = 20.dp, bottom = 28.dp),
+                .padding(top = 12.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Entrance(entered, 0) {
                 Row(
@@ -209,7 +209,7 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
             }
 
             Entrance(entered, 1) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     PowerOrb(
                         state = orbState,
                         enabled = !starting && !stopping,

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,9 @@ fun AppShell() {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var expanded by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    val store = remember(context) { SettingsStore(context) }
+    val settings by store.settings.collectAsStateWithLifecycle(initialValue = ProxySettings())
+    SideEffect { Palette.neon = settings.neonStyle }
 
     val running by ProxyService.isRunning.collectAsStateWithLifecycle()
     val health by ProxyService.portHealth.collectAsStateWithLifecycle()

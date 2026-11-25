@@ -95,6 +95,16 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         Text(stringResource(R.string.nav_settings), style = MaterialTheme.typography.headlineSmall, color = Palette.TextPrimary)
 
         SurfaceCard {
+            SectionTitle(stringResource(R.string.section_style))
+            ToggleRow(
+                title = stringResource(R.string.setting_neon),
+                subtitle = stringResource(R.string.setting_neon_hint),
+                checked = settings.neonStyle,
+                onChange = { v -> save { it.copy(neonStyle = v) } },
+            )
+        }
+
+        SurfaceCard {
             SectionTitle(stringResource(R.string.section_proxy))
             OutlinedTextField(
                 value = portText,
