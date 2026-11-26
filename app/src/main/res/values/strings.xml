@@ -40,6 +40,7 @@
     <string name="action_battery">Battery optimization settings</string>
 
     <string name="nav_proxy">Proxy</string>
+    <string name="nav_gpt">ChatGPT</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_diagnostics">Diagnostics</string>
 
@@ -104,4 +105,20 @@
     <string name="shortcut_stop">Stop proxy</string>
     <string name="shortcut_toggle">Toggle proxy</string>
     <string name="shortcut_confirm">Allow this app to change the Telegram proxy?</string>
+
+    <string name="gpt_gear">ChatGPT settings</string>
+    <string name="gpt_close">Close</string>
+    <string name="gpt_auto_send">Auto-send prompt with a photo</string>
+    <string name="gpt_auto_send_hint">Snap-homework mode: pick a photo in the chat and the selected prompt is typed and sent automatically.</string>
+    <string name="gpt_custom_prompt">Your own prompt</string>
+    <string name="gpt_add_prompt">Add prompt</string>
+    <string name="gpt_delete_prompt">Delete prompt</string>
+    <string name="gpt_proxy_section">Proxy for ChatGPT</string>
+    <string name="gpt_proxy_enabled">Use HTTP proxy</string>
+    <string name="gpt_proxy_host">Host</string>
+    <string name="gpt_proxy_port">Port</string>
+    <string name="gpt_proxy_save">Save proxy</string>
+    <string name="gpt_proxy_hint">Applies to this tab only. Leave off to connect directly.</string>
+    <string name="gpt_action_login">Sign in / register</string>
+    <string name="gpt_action_reload">Reload chat</string>
 </resources>

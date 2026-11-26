@@ -30,8 +30,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tgwsmobile.proxy.ui.ChatScreen
 import com.tgwsmobile.proxy.ui.ConnectionScreen
 import com.tgwsmobile.proxy.ui.DiagnosticsScreen
+import com.tgwsmobile.proxy.ui.GptTabBridge
 import com.tgwsmobile.proxy.ui.Motion
 import com.tgwsmobile.proxy.ui.Palette
 import com.tgwsmobile.proxy.ui.ProvideMotionPreferences
@@ -76,6 +78,7 @@ fun AppShell() {
 
     val titles = listOf(
         stringResource(R.string.nav_proxy),
+        stringResource(R.string.nav_gpt),
         stringResource(R.string.nav_settings),
         stringResource(R.string.nav_diagnostics),
     )
@@ -84,6 +87,8 @@ fun AppShell() {
     val labelBattery = stringResource(R.string.action_battery)
     val labelSource = stringResource(R.string.action_source)
     val labelShare = stringResource(R.string.action_share_journal)
+    val labelGptReload = stringResource(R.string.gpt_action_reload)
+    val labelGptLogin = stringResource(R.string.gpt_action_login)
 
     val actionsFor: (Int) -> List<QuickAction> = { index ->
         when (index) {
@@ -96,6 +101,10 @@ fun AppShell() {
                 },
             )
             1 -> listOf(
+                QuickAction(labelGptLogin, true) { GptTabBridge.requestLogin() },
+                QuickAction(labelGptReload, true) { GptTabBridge.requestReload() },
+            )
+            2 -> listOf(
                 QuickAction(labelBattery, true) { openBatterySettings(context) },
                 QuickAction(labelSource, true) { openUrl(context, SOURCE_URL) },
             )
@@ -122,7 +131,8 @@ fun AppShell() {
         ) { page ->
             when (page) {
                 0 -> ConnectionScreen()
-                1 -> SettingsScreen()
+                1 -> ChatScreen(store)
+                2 -> SettingsScreen()
                 else -> DiagnosticsScreen()
             }
         }

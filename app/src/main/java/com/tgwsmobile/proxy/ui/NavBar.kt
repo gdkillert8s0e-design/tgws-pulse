@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -79,15 +80,16 @@ private data class DockItem(val label: Int, val icon: ImageVector)
 
 private val DOCK_ITEMS = listOf(
     DockItem(R.string.nav_proxy, Icons.Rounded.PowerSettingsNew),
+    DockItem(R.string.nav_gpt, Icons.Rounded.SmartToy),
     DockItem(R.string.nav_settings, Icons.Rounded.Settings),
     DockItem(R.string.nav_diagnostics, Icons.Rounded.BugReport),
 )
 
-// Compact, low, floating. Three tabs of 46dp with 8dp gaps and 8dp side padding.
+// Compact, low, floating. Four tabs of 46dp with 8dp gaps and 8dp side padding.
 private val TAB = 46.dp
 private val GAP = 8.dp
 private val PAD = 8.dp
-private val DOCK_W = TAB * 3 + GAP * 2 + PAD * 2
+private val DOCK_W = TAB * DOCK_ITEMS.size + GAP * (DOCK_ITEMS.size - 1) + PAD * 2
 private val DOCK_H = TAB + 14.dp
 private val STRETCH_MAX = 12.dp
 
@@ -121,7 +123,7 @@ fun RubberDock(
     val stretchMaxPx = with(density) { STRETCH_MAX.toPx() }
     fun centerPx(i: Int): Float = padPx + tabPx / 2f + i * (tabPx + gapPx)
     val firstCenter = centerPx(0)
-    val lastCenter = centerPx(2)
+    val lastCenter = centerPx(DOCK_ITEMS.lastIndex)
 
     // Thumb = the centre of the white indicator, in pixels from the dock's left edge.
     val thumb = remember { Animatable(centerPx(selected)) }
@@ -163,12 +165,12 @@ fun RubberDock(
 
     fun indexAt(x: Float): Int? {
         val i = floor((x - padPx) / (tabPx + gapPx)).toInt()
-        if (i !in 0..2) return null
+        if (i !in DOCK_ITEMS.indices) return null
         val left = padPx + i * (tabPx + gapPx)
         return if (x in left..(left + tabPx)) i else null
     }
     fun nearestIndex(x: Float): Int =
-        ((x - padPx - tabPx / 2f) / (tabPx + gapPx)).roundToInt().coerceIn(0, 2)
+        ((x - padPx - tabPx / 2f) / (tabPx + gapPx)).roundToInt().coerceIn(0, DOCK_ITEMS.lastIndex)
 
     val indicatorColor = if (Palette.neon) Palette.Online else Palette.TextPrimary
     val glassFill = Palette.SurfaceRaised.copy(alpha = if (Palette.neon) 0.62f else 0.70f)

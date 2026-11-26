@@ -23,6 +23,11 @@ data class ProxySettings(
     val cfWorkerDomain: String = "",
     val autostart: Boolean = false,
     val neonStyle: Boolean = false,
+    val gptAutoSend: Boolean = false,
+    val gptCustomPrompts: List<String> = emptyList(),
+    val gptProxyEnabled: Boolean = false,
+    val gptProxyHost: String = "",
+    val gptProxyPort: String = "",
 )
 
 class SettingsStore(private val context: Context) {
@@ -48,6 +53,11 @@ class SettingsStore(private val context: Context) {
         val AUTOSTART = booleanPreferencesKey("autostart")
         val SECRET_SEALED = stringPreferencesKey("secret_sealed")
         val NEON = booleanPreferencesKey("neon_style")
+        val GPT_AUTO_SEND = booleanPreferencesKey("gpt_auto_send")
+        val GPT_CUSTOM_PROMPTS = stringPreferencesKey("gpt_custom_prompts")
+        val GPT_PROXY_ENABLED = booleanPreferencesKey("gpt_proxy_enabled")
+        val GPT_PROXY_HOST = stringPreferencesKey("gpt_proxy_host")
+        val GPT_PROXY_PORT = stringPreferencesKey("gpt_proxy_port")
     }
 
     private fun Preferences.toSettings() = ProxySettings(
@@ -59,6 +69,12 @@ class SettingsStore(private val context: Context) {
         cfWorkerDomain = this[Keys.WORKER].orEmpty(),
         autostart = this[Keys.AUTOSTART] ?: false,
         neonStyle = this[Keys.NEON] ?: false,
+        gptAutoSend = this[Keys.GPT_AUTO_SEND] ?: false,
+        gptCustomPrompts = this[Keys.GPT_CUSTOM_PROMPTS].orEmpty()
+            .split('\n').map { it.trim() }.filter { it.isNotEmpty() },
+        gptProxyEnabled = this[Keys.GPT_PROXY_ENABLED] ?: false,
+        gptProxyHost = this[Keys.GPT_PROXY_HOST].orEmpty(),
+        gptProxyPort = this[Keys.GPT_PROXY_PORT].orEmpty(),
     )
 
     val settings: Flow<ProxySettings> = context.proxyDataStore.data.map { it.toSettings() }
@@ -82,6 +98,11 @@ class SettingsStore(private val context: Context) {
             prefs[Keys.WORKER] = next.cfWorkerDomain.trim()
             prefs[Keys.AUTOSTART] = next.autostart
             prefs[Keys.NEON] = next.neonStyle
+            prefs[Keys.GPT_AUTO_SEND] = next.gptAutoSend
+            prefs[Keys.GPT_CUSTOM_PROMPTS] = next.gptCustomPrompts.joinToString("\n")
+            prefs[Keys.GPT_PROXY_ENABLED] = next.gptProxyEnabled
+            prefs[Keys.GPT_PROXY_HOST] = next.gptProxyHost.trim()
+            prefs[Keys.GPT_PROXY_PORT] = next.gptProxyPort.trim()
         }
     }
 

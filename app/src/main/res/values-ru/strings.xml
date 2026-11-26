@@ -40,6 +40,7 @@
     <string name="action_battery">Настройки оптимизации батареи</string>
 
     <string name="nav_proxy">Прокси</string>
+    <string name="nav_gpt">ChatGPT</string>
     <string name="nav_settings">Настройки</string>
     <string name="nav_diagnostics">Диагностика</string>
 
@@ -104,4 +105,20 @@
     <string name="shortcut_stop">Остановить прокси</string>
     <string name="shortcut_toggle">Переключить прокси</string>
     <string name="shortcut_confirm">Разрешить этому приложению менять прокси Telegram?</string>
+
+    <string name="gpt_gear">Настройки ChatGPT</string>
+    <string name="gpt_close">Закрыть</string>
+    <string name="gpt_auto_send">Автоотправка промпта при фото</string>
+    <string name="gpt_auto_send_hint">Режим ГДЗ: выбираешь фото в чате — выбранный промпт сам вводится и отправляется.</string>
+    <string name="gpt_custom_prompt">Свой промпт</string>
+    <string name="gpt_add_prompt">Добавить промпт</string>
+    <string name="gpt_delete_prompt">Удалить промпт</string>
+    <string name="gpt_proxy_section">Прокси для ChatGPT</string>
+    <string name="gpt_proxy_enabled">Использовать HTTP-прокси</string>
+    <string name="gpt_proxy_host">Хост</string>
+    <string name="gpt_proxy_port">Порт</string>
+    <string name="gpt_proxy_save">Сохранить прокси</string>
+    <string name="gpt_proxy_hint">Действует только для этой вкладки. Выключено — соединение напрямую.</string>
+    <string name="gpt_action_login">Войти / зарегистрироваться</string>
+    <string name="gpt_action_reload">Перезагрузить чат</string>
 </resources>
