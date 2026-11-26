@@ -149,7 +149,6 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
     val entered = remember { MutableTransitionState(false).apply { targetState = true } }
     var revealSecret by rememberSaveable { mutableStateOf(false) }
     var copied by remember { mutableStateOf(false) }
-    var shareLink by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(copied) {
         if (copied) {
             delay(1400)
@@ -161,13 +160,6 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
     val port = connection?.port ?: settings.port
     val fullSecret = connection?.secret ?: ProxyLink.fullSecret(secret)
     val errorText = error ?: stringResource(R.string.hint_error)
-    val proxyLink = remember(connection, fullSecret, host, port) {
-        connection?.let { ProxyLink.build(host, it.port, fullSecret) }
-    }
-    shareLink?.let { link ->
-        ShareToast(link)
-        shareLink = null
-    }
 
     Box(
         modifier = modifier
@@ -345,25 +337,12 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    PressablePill(
-                        text = stringResource(R.string.action_share),
-                        enabled = serving && connection != null,
-                        primary = false,
-                        onClick = { proxyLink?.let { shareLink = it } },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
             }
         }
     }
 }
 
-
-/** Small toast-like banner that shows a text for a moment (used after copy). */
-@Composable
-fun ShareToast(message: String) {
-    android.widget.Toast.makeText(LocalContext.current, message, android.widget.Toast.LENGTH_SHORT).show()
-}
 
 /** Staggered entrance: each block fades and rises a little after the previous one. */
 @Composable
