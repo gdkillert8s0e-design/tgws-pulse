@@ -9,7 +9,10 @@ import androidx.compose.animation.core.Easing
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 object Motion {
     const val FAST = 180
     const val BASE = 340
+    fun scaled(ms: Int): Int = MotionState.scaled(ms)
     const val SLOW = 680
     const val STAGGER = 70
 
@@ -70,11 +74,21 @@ object Springs {
 /** True when the system's animation scale is 0 (Developer options / accessibility "Remove animations"). */
 val LocalReduceMotion = compositionLocalOf { false }
 
+/**
+ * User-chosen animation intensity ([AnimLevel]). Composables multiply durations by
+ * [scale] and treat the app as reduced-motion when it is [AnimLevel.Off].
+ */
+object MotionState {
+    var scale by mutableFloatStateOf(1f)
+    val off: Boolean get() = scale <= 0f
+    fun scaled(ms: Int): Int = if (off) 0 else (ms * scale).toInt().coerceAtLeast(1)
+}
+
 @Composable
 fun ProvideMotionPreferences(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val reduce = remember(context) {
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
     }
-    CompositionLocalProvider(LocalReduceMotion provides reduce, content = content)
+    CompositionLocalProvider(LocalReduceMotion provides (reduce || MotionState.off), content = content)
 }

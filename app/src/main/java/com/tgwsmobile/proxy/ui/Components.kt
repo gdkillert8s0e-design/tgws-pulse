@@ -24,12 +24,30 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
+
+/** The corner shape used by cards and pills, from the button/card style settings. */
+val CardShape: RoundedCornerShape
+    get() = when (Palette.cardStyle) {
+        CardStyle.Soft -> RoundedCornerShape(18.dp)
+        CardStyle.Raised -> RoundedCornerShape(24.dp)
+        CardStyle.Sharp -> RoundedCornerShape(4.dp)
+        CardStyle.Glass -> RoundedCornerShape(28.dp)
+    }
+
+val PillShape: RoundedCornerShape
+    get() = when (Palette.buttonStyle) {
+        ButtonStyle.Pill -> RoundedCornerShape(27.dp)
+        ButtonStyle.Rounded -> RoundedCornerShape(14.dp)
+        ButtonStyle.Outline -> RoundedCornerShape(10.dp)
+        ButtonStyle.Glow -> RoundedCornerShape(27.dp)
+    }
 
 /** A calm surface card with a hairline border; the only container shape used in the app. */
 @Composable
@@ -40,9 +58,17 @@ fun SurfaceCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(CardShape)
             .background(Palette.Surface)
-            .border(1.dp, Palette.Outline, RoundedCornerShape(18.dp))
+            .border(
+                width = if (Palette.cardStyle == CardStyle.Glass) 1.dp else 1.dp,
+                brush = if (Palette.isGlass) {
+                    Brush.horizontalGradient(listOf(Palette.Outline, Color.Transparent, Palette.Outline))
+                } else {
+                    androidx.compose.ui.graphics.SolidColor(Palette.Outline)
+                },
+                shape = CardShape,
+            )
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         content = { content() },
@@ -86,7 +112,21 @@ fun PressablePill(
         modifier = modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .height(54.dp)
-            .clip(RoundedCornerShape(27.dp))
+            .then(
+                if (Palette.buttonStyle == ButtonStyle.Glow && enabled) {
+                    Modifier.pulseGlow(if (primary) Palette.Online else Palette.Connecting, alpha = Palette.glow)
+                } else {
+                    Modifier
+                }
+            )
+            .clip(PillShape)
+            .then(
+                if (Palette.buttonStyle == ButtonStyle.Outline && !primary) {
+                    Modifier.border(1.dp, Palette.Outline, PillShape)
+                } else {
+                    Modifier
+                }
+            )
             .background(background)
             .clickable(
                 enabled = enabled,

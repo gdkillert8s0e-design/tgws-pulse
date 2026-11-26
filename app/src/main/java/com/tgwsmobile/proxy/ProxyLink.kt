@@ -40,4 +40,8 @@ object ProxyLink {
     /** Shows only the edges of a secret, for the UI and for logs. */
     fun mask(secret: String): String =
         if (secret.length <= 8) "••••••••" else secret.take(4) + "••••••••" + secret.takeLast(4)
+
+    /** The tg://proxy deep link for a connection, ready to share. */
+    fun build(host: String, port: Int, fullSecret: String): String =
+        uri(host, port, fullSecret)
 }

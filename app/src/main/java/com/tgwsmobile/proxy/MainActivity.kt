@@ -32,17 +32,26 @@ import androidx.compose.foundation.background
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tgwsmobile.proxy.ui.ConnectionScreen
 import com.tgwsmobile.proxy.ui.DiagnosticsScreen
+import com.tgwsmobile.proxy.ui.LaunchAnim
+import com.tgwsmobile.proxy.ui.LaunchOverlay
 import com.tgwsmobile.proxy.ui.Motion
+import com.tgwsmobile.proxy.ui.MotionState
 import com.tgwsmobile.proxy.ui.Palette
 import com.tgwsmobile.proxy.ui.ProvideMotionPreferences
 import com.tgwsmobile.proxy.ui.QuickAction
 import com.tgwsmobile.proxy.ui.RubberDock
 import com.tgwsmobile.proxy.ui.SettingsScreen
 import com.tgwsmobile.proxy.ui.TgWsTheme
+import com.tgwsmobile.proxy.ui.ThemeId
+import com.tgwsmobile.proxy.ui.AnimLevel
+import com.tgwsmobile.proxy.ui.ButtonStyle
+import com.tgwsmobile.proxy.ui.CardStyle
+import com.tgwsmobile.proxy.ui.toEnumOrNull
 import com.tgwsmobile.proxy.ui.copyTgLink
 import com.tgwsmobile.proxy.ui.openBatterySettings
 import com.tgwsmobile.proxy.ui.openUrl
 import com.tgwsmobile.proxy.ui.SOURCE_URL
+import androidx.compose.ui.graphics.Brush
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,7 +76,27 @@ fun AppShell() {
     val context = LocalContext.current
     val store = remember(context) { SettingsStore(context) }
     val settings by store.settings.collectAsStateWithLifecycle(initialValue = ProxySettings())
-    SideEffect { Palette.neon = settings.neonStyle }
+    val ui by store.uiSettings.collectAsStateWithLifecycle(initialValue = UiSettings())
+
+    val theme = remember(ui.theme) { ui.theme.toEnumOrNull<ThemeId>() ?: ThemeId.Emerald }
+    val launchAnim = remember(ui.launchAnim) { ui.launchAnim.toEnumOrNull<LaunchAnim>() ?: LaunchAnim.Fade }
+    val animLevel = remember(ui.animLevel) { ui.animLevel.toEnumOrNull<AnimLevel>() ?: AnimLevel.Normal }
+    val cardStyle = remember(ui.cardStyle) { ui.cardStyle.toEnumOrNull<CardStyle>() ?: CardStyle.Soft }
+    val buttonStyle = remember(ui.buttonStyle) { ui.buttonStyle.toEnumOrNull<ButtonStyle>() ?: ButtonStyle.Pill }
+    SideEffect {
+        Palette.theme = theme
+        Palette.glow = ui.glow
+        Palette.cardStyle = cardStyle
+        Palette.buttonStyle = buttonStyle
+        Palette.elementOpacity = ui.elementOpacity
+        Palette.bgEffects = ui.bgEffects
+        MotionState.scale = animLevel.scale
+    }
+
+    var launchDone by rememberSaveable { mutableStateOf(false) }
+    if (!launchDone) {
+        LaunchOverlay(launchAnim) { launchDone = true }
+    }
 
     val running by ProxyService.isRunning.collectAsStateWithLifecycle()
     val health by ProxyService.portHealth.collectAsStateWithLifecycle()
@@ -106,17 +135,31 @@ fun AppShell() {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Palette.Background)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                if (Palette.bgEffects) {
+                    Brush.verticalGradient(listOf(Palette.Background, Palette.BackgroundAlt))
+                } else {
+                    androidx.compose.ui.graphics.SolidColor(Palette.Background)
+                }
+            )
+    ) {
         AnimatedContent(
             targetState = tab,
             modifier = Modifier.fillMaxSize().padding(bottom = CONTENT_BOTTOM_PADDING),
             transitionSpec = {
                 // Pages slide in the direction of travel; the outgoing page leaves quicker.
-                val forward = targetState > initialState
-                (slideInHorizontally(tween(Motion.BASE, easing = Motion.Expressive)) { if (forward) it / 6 else -it / 6 } +
-                    fadeIn(tween(Motion.BASE))) togetherWith
-                    (slideOutHorizontally(tween(Motion.FAST, easing = Motion.Exit)) { if (forward) -it / 8 else it / 8 } +
-                        fadeOut(tween(Motion.FAST)))
+                if (MotionState.off) {
+                    fadeIn(tween(1)) togetherWith fadeOut(tween(1))
+                } else {
+                    val forward = targetState > initialState
+                    (slideInHorizontally(tween(Motion.scaled(Motion.BASE), easing = Motion.Expressive)) { if (forward) it / 6 else -it / 6 } +
+                        fadeIn(tween(Motion.scaled(Motion.BASE)))) togetherWith
+                        (slideOutHorizontally(tween(Motion.scaled(Motion.FAST), easing = Motion.Exit)) { if (forward) -it / 8 else it / 8 } +
+                            fadeOut(tween(Motion.scaled(Motion.FAST))))
+                }
             },
             label = "tabs",
         ) { page ->

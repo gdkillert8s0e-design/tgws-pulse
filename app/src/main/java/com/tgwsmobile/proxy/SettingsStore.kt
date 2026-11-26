@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -23,6 +24,18 @@ data class ProxySettings(
     val cfWorkerDomain: String = "",
     val autostart: Boolean = false,
     val neonStyle: Boolean = false,
+)
+
+/** Appearance and motion customization. Empty [theme] means "migrate from neonStyle". */
+data class UiSettings(
+    val theme: String = "",
+    val launchAnim: String = "Fade",
+    val animLevel: String = "Normal",
+    val bgEffects: Boolean = true,
+    val glow: Float = 0.5f,
+    val cardStyle: String = "Soft",
+    val buttonStyle: String = "Pill",
+    val elementOpacity: Float = 1f,
 )
 
 class SettingsStore(private val context: Context) {
@@ -48,6 +61,70 @@ class SettingsStore(private val context: Context) {
         val AUTOSTART = booleanPreferencesKey("autostart")
         val SECRET_SEALED = stringPreferencesKey("secret_sealed")
         val NEON = booleanPreferencesKey("neon_style")
+        val THEME = stringPreferencesKey("ui_theme")
+        val LAUNCH_ANIM = stringPreferencesKey("ui_launch_anim")
+        val ANIM_LEVEL = stringPreferencesKey("ui_anim_level")
+        val BG_EFFECTS = booleanPreferencesKey("ui_bg_effects")
+        val GLOW = floatPreferencesKey("ui_glow")
+        val CARD_STYLE = stringPreferencesKey("ui_card_style")
+        val BUTTON_STYLE = stringPreferencesKey("ui_button_style")
+        val ELEMENT_OPACITY = floatPreferencesKey("ui_element_opacity")
+    }
+
+    private fun Preferences.toUiSettings() = UiSettings(
+        theme = this[Keys.THEME].orEmpty(),
+        launchAnim = this[Keys.LAUNCH_ANIM] ?: "Fade",
+        animLevel = this[Keys.ANIM_LEVEL] ?: "Normal",
+        bgEffects = this[Keys.BG_EFFECTS] ?: true,
+        glow = this[Keys.GLOW] ?: 0.5f,
+        cardStyle = this[Keys.CARD_STYLE] ?: "Soft",
+        buttonStyle = this[Keys.BUTTON_STYLE] ?: "Pill",
+        elementOpacity = this[Keys.ELEMENT_OPACITY] ?: 1f,
+    )
+
+    /** Appearance settings; migrates the old neon toggle into a theme name once. */
+    val uiSettings: Flow<UiSettings> = context.proxyDataStore.data.map { prefs ->
+        val ui = prefs.toUiSettings()
+        if (ui.theme.isEmpty()) {
+            val migrated = if (prefs[Keys.NEON] == true) "Neon" else "Emerald"
+            context.proxyDataStore.edit { it[Keys.THEME] = migrated }
+            ui.copy(theme = migrated)
+        } else ui
+    }
+
+    suspend fun updateUi(transform: (UiSettings) -> UiSettings) {
+        context.proxyDataStore.edit { prefs ->
+            val next = transform(prefs.toUiSettings())
+            prefs[Keys.THEME] = next.theme.ifEmpty { "Emerald" }
+            prefs[Keys.LAUNCH_ANIM] = next.launchAnim
+            prefs[Keys.ANIM_LEVEL] = next.animLevel
+            prefs[Keys.BG_EFFECTS] = next.bgEffects
+            prefs[Keys.GLOW] = next.glow.coerceIn(0f, 1f)
+            prefs[Keys.CARD_STYLE] = next.cardStyle
+            prefs[Keys.BUTTON_STYLE] = next.buttonStyle
+            prefs[Keys.ELEMENT_OPACITY] = next.elementOpacity.coerceIn(0.6f, 1f)
+        }
+    }
+
+    /** Puts every setting back to its default. The secret survives. */
+    suspend fun resetAll() {
+        context.proxyDataStore.edit { prefs ->
+            prefs[Keys.PORT] = DEFAULT_PORT
+            prefs[Keys.POOL] = 4
+            prefs[Keys.CF] = true
+            prefs[Keys.CUSTOM_CF_ENABLED] = false
+            prefs[Keys.CUSTOM_CF] = ""
+            prefs[Keys.WORKER] = ""
+            prefs[Keys.AUTOSTART] = false
+            prefs[Keys.THEME] = "Emerald"
+            prefs[Keys.LAUNCH_ANIM] = "Fade"
+            prefs[Keys.ANIM_LEVEL] = "Normal"
+            prefs[Keys.BG_EFFECTS] = true
+            prefs[Keys.GLOW] = 0.5f
+            prefs[Keys.CARD_STYLE] = "Soft"
+            prefs[Keys.BUTTON_STYLE] = "Pill"
+            prefs[Keys.ELEMENT_OPACITY] = 1f
+        }
     }
 
     private fun Preferences.toSettings() = ProxySettings(
