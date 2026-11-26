@@ -2,7 +2,6 @@ package com.tgwsmobile.proxy
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
@@ -12,8 +11,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -67,7 +64,6 @@ private val CONTENT_BOTTOM_PADDING = 104.dp
 @Composable
 fun AppShell() {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val store = remember(context) { SettingsStore(context) }
     val settings by store.settings.collectAsStateWithLifecycle(initialValue = ProxySettings())
@@ -110,9 +106,6 @@ fun AppShell() {
         }
     }
 
-    // Back closes the expanded card first, before leaving the app.
-    BackHandler(enabled = expanded) { expanded = false }
-
     Box(Modifier.fillMaxSize().background(Palette.Background)) {
         AnimatedContent(
             targetState = tab,
@@ -134,25 +127,11 @@ fun AppShell() {
             }
         }
 
-        // Tapping outside the open card closes it. Transparent: nothing is dimmed.
-        if (expanded) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                    ) { expanded = false },
-            )
-        }
-
         RubberDock(
             selected = tab,
-            expanded = expanded,
             titles = titles,
             actionsFor = actionsFor,
             onSelect = { tab = it },
-            onToggleExpanded = { expanded = !expanded },
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()

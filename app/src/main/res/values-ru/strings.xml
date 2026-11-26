@@ -14,7 +14,7 @@
     <string name="status_error">Ошибка</string>
     <string name="hint_off">Нажмите, чтобы запустить локальный прокси</string>
     <string name="hint_connecting">Открываем локальный порт и проверяем маршрут</string>
-    <string name="hint_online">Слушаем 127.0.0.1. Telegram может подключаться</string>
+    <string name="hint_online">Трафик идёт через прокси. Telegram подключён</string>
     <string name="hint_error">Прокси остановился</string>
 
     <string name="uptime_title">Время работы</string>

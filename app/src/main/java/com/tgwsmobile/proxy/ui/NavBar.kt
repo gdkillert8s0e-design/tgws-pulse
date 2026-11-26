@@ -1,18 +1,10 @@
 package com.tgwsmobile.proxy.ui
 
 import android.os.SystemClock
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -97,8 +89,6 @@ private val GAP = 8.dp
 private val PAD = 8.dp
 private val DOCK_W = TAB * 3 + GAP * 2 + PAD * 2
 private val DOCK_H = TAB + 14.dp
-private val DOCK_EXPANDED_W = 300.dp
-private val DOCK_EXPANDED_H = 220.dp
 private val STRETCH_MAX = 12.dp
 
 /**
@@ -114,11 +104,9 @@ private val STRETCH_MAX = 12.dp
 @Composable
 fun RubberDock(
     selected: Int,
-    expanded: Boolean,
     titles: List<String>,
     actionsFor: (Int) -> List<QuickAction>,
     onSelect: (Int) -> Unit,
-    onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val reduce = LocalReduceMotion.current
@@ -156,21 +144,9 @@ fun RubberDock(
         lift.animateTo(if (dragging) 1.12f else 1f, Springs.Press)
     }
 
-    val dockWidth by animateDpAsState(
-        targetValue = if (expanded) DOCK_EXPANDED_W else DOCK_W,
-        animationSpec = if (reduce) snap<Dp>() else Springs.MorphDp,
-        label = "dock-width",
-    )
-    val dockHeight by animateDpAsState(
-        targetValue = if (expanded) DOCK_EXPANDED_H else DOCK_H,
-        animationSpec = if (reduce) snap<Dp>() else Springs.MorphDp,
-        label = "dock-height",
-    )
-    val corner by animateDpAsState(
-        targetValue = if (expanded) 24.dp else DOCK_H / 2,
-        animationSpec = if (reduce) snap<Dp>() else Springs.MorphDp,
-        label = "dock-corner",
-    )
+    val dockWidth = DOCK_W
+    val dockHeight = DOCK_H
+    val corner = DOCK_H / 2
 
     val scales = DOCK_ITEMS.mapIndexed { i, _ ->
         animateFloatAsState(
@@ -183,7 +159,7 @@ fun RubberDock(
     // Gesture callbacks read the latest values without restarting the pointer handler.
     val selectedNow by rememberUpdatedState(selected)
     val onSelectNow by rememberUpdatedState(onSelect)
-    val onToggleNow by rememberUpdatedState(onToggleExpanded)
+
 
     fun indexAt(x: Float): Int? {
         val i = floor((x - padPx) / (tabPx + gapPx)).toInt()
@@ -207,9 +183,7 @@ fun RubberDock(
             .border(1.dp, glassRim, RoundedCornerShape(corner)),
     ) {
         Column(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                ExpandedPanel(expanded = expanded, selected = selected, titles = titles, actionsFor = actionsFor)
-            }
+            Box(Modifier.fillMaxWidth().weight(1f)) {}
 
             Box(
                 Modifier
@@ -267,7 +241,7 @@ fun RubberDock(
                             } else if (!moved) {
                                 val index = indexAt(startX)
                                 if (index != null) {
-                                    if (index == selectedNow) onToggleNow() else onSelectNow(index)
+                                    onSelectNow(index)
                                 }
                             }
                         }
@@ -376,58 +350,6 @@ private fun DockIcon(item: DockItem, scale: Float, tint: Color) {
                 scaleY = scale
             },
     )
-}
-
-/** The card the dock grows into. Content is keyed by tab, so switching tabs crossfades it. */
-@Composable
-private fun ExpandedPanel(
-    expanded: Boolean,
-    selected: Int,
-    titles: List<String>,
-    actionsFor: (Int) -> List<QuickAction>,
-) {
-    AnimatedVisibility(
-        visible = expanded,
-        modifier = Modifier.fillMaxSize(),
-        enter = fadeIn(tween(Motion.BASE, delayMillis = 60, easing = Motion.Standard)),
-        exit = fadeOut(tween(Motion.FAST)),
-    ) {
-        AnimatedContent(
-            targetState = selected,
-            transitionSpec = {
-                fadeIn(tween(Motion.BASE, easing = Motion.Standard)) togetherWith fadeOut(tween(Motion.FAST))
-            },
-            label = "dock-actions",
-        ) { index ->
-            Column(
-                Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = titles.getOrElse(index) { "" },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Palette.TextMuted,
-                )
-                actionsFor(index).forEachIndexed { i, action ->
-                    StaggeredAction(index = i, action = action)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StaggeredAction(index: Int, action: QuickAction) {
-    val shown = remember { MutableTransitionState(false) }
-    LaunchedEffect(Unit) { shown.targetState = true }
-    val delay = 90 + index * Motion.STAGGER
-    AnimatedVisibility(
-        visibleState = shown,
-        enter = fadeIn(tween(Motion.BASE, delayMillis = delay, easing = Motion.Standard)) +
-            slideInVertically(tween(Motion.BASE, delayMillis = delay, easing = Motion.Expressive)) { it / 2 },
-    ) {
-        ActionRow(action)
-    }
 }
 
 @Composable

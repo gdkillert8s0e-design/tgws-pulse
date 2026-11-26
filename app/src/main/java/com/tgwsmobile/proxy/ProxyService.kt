@@ -111,6 +111,10 @@ class ProxyService : Service() {
         val isStopping: StateFlow<Boolean> = disconnectingState
 
         private val health = MutableStateFlow(PortHealth.Unknown)
+        /** True once at least one real session reached Telegram through an upstream route. */
+        private val reachedTelegram = MutableStateFlow(false)
+        /** True once a session reached Telegram; a listening port alone is not "connected". */
+        val telegramConnected: StateFlow<Boolean> = reachedTelegram
         val portHealth: StateFlow<PortHealth> = health
 
         private val statsState = MutableStateFlow(ProxyStats())
@@ -270,6 +274,12 @@ class ProxyService : Service() {
             }
             statsState.value = result.stats
 
+            // A listening local port only means the bridge is up. "Connected" is
+            // a real session that reached Telegram over any upstream route.
+            val reached = result.stats.viaWs > 0 || result.stats.viaCloudflare > 0 ||
+                result.stats.viaDirect > 0 || result.stats.viaFronting > 0
+            reachedTelegram.value = reached
+
             val answers = withContext(Dispatchers.IO) { probePort(config.host, config.port) }
             if (answers) {
                 if (failures > 0) journal("info", "local port answers again")
@@ -402,6 +412,7 @@ class ProxyService : Service() {
         connection.value = null
         running.value = false
         health.value = PortHealth.Unknown
+        reachedTelegram.value = false
         statsState.value = ProxyStats()
         startedState.value = 0L
         update(getString(R.string.notification_stopping))

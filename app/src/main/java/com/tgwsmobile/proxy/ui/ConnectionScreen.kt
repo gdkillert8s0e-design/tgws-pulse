@@ -104,12 +104,14 @@ fun ConnectionScreen(modifier: Modifier = Modifier) {
 
     LaunchedEffect(Unit) { store.ensureSecret() }
 
-    // "Connected" is shown only when the engine runs AND the local port answers.
+    // "Connected" is shown only when a real session reached Telegram through an
+    // upstream route; a listening local port alone is still "Connecting".
     val serving = running && health == PortHealth.Listening
+    val telegramUp by ProxyService.telegramConnected.collectAsStateWithLifecycle()
     val orbState = when {
         stopping -> OrbState.Disconnecting
         starting -> OrbState.Connecting
-        running && serving -> OrbState.Online
+        running && serving && telegramUp -> OrbState.Online
         running -> OrbState.Connecting
         error != null -> OrbState.Error
         else -> OrbState.Off

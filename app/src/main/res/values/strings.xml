@@ -14,7 +14,7 @@
     <string name="status_error">Error</string>
     <string name="hint_off">Tap to start the local proxy</string>
     <string name="hint_connecting">Opening the local listener and checking the route</string>
-    <string name="hint_online">Listening on 127.0.0.1. Telegram can use it now</string>
+    <string name="hint_online">Traffic is flowing through the proxy. Telegram is connected</string>
     <string name="hint_error">Something stopped the proxy</string>
 
     <string name="uptime_title">Uptime</string>
