@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TG Pulse — просмотр дизайна</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#050B08; --bg-alt:#050B08; --surface:#0A1410; --raised:#0F1D17;
+    --outline:#1C3629; --text:#E6F6EC; --muted:#7FA38E;
+    --online:#34D399; --connecting:#7BD8B4; --error:#FF6F7D; --idle:#4A6656;
+    --glow:.5; --opacity:1; --radius-card:24px; --radius-btn:32px;
+    --btn-border:0; --btn-bg:var(--online); --btn-color:#050B08;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Onest',sans-serif; background:#06080C; color:#EAF0F8;
+    min-height:100vh; display:flex; gap:40px; align-items:flex-start;
+    justify-content:center; padding:32px 16px; flex-wrap:wrap;
+  }
+  h1{font-family:'Unbounded',sans-serif; font-size:15px; font-weight:600; letter-spacing:-.2px}
+  .side{width:360px; max-width:100%}
+  .side h1{margin-bottom:4px}
+  .side .sub{font-size:12px; color:#7C889E; margin-bottom:20px}
+
+  /* ---------- телефон ---------- */
+  .phone{
+    width:360px; height:740px; border-radius:44px; padding:10px;
+    background:#10151d; border:1px solid #263140; position:sticky; top:24px;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);
+  }
+  .screen{
+    position:relative; width:100%; height:100%; border-radius:36px; overflow:hidden;
+    background:linear-gradient(180deg,var(--bg),var(--bg-alt));
+    display:flex; flex-direction:column; transition:background .4s;
+  }
+  .screen::before{ /* radial accent, как drawBehind в ConnectionScreen */
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--accent,var(--online)) 16%, transparent), transparent 62%);
+    transition:background .4s;
+  }
+  .bgfx{position:absolute; inset:0; overflow:hidden; pointer-events:none}
+  .bgfx .blob{position:absolute; border-radius:50%; filter:blur(60px); opacity:calc(var(--glow)*.25); transition:background .4s}
+  .bgfx .b1{width:260px;height:260px; top:-60px; left:50%; translate:-50% 0; background:var(--online)}
+  .bgfx .b2{width:200px;height:200px; bottom:60px; right:-60px; background:var(--connecting); opacity:calc(var(--glow)*.14)}
+  .statusbar{height:34px; display:flex; justify-content:space-between; align-items:flex-end; padding:0 22px 4px; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); position:relative; z-index:2}
+  .content{flex:1; display:flex; flex-direction:column; align-items:center; padding:8px 20px 12px; position:relative; z-index:2; overflow:hidden}
+  .app-title{font-family:'Unbounded',sans-serif; font-weight:700; font-size:26px; letter-spacing:-.5px; color:var(--text); margin-top:6px}
+  .app-sub{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.1px; color:var(--muted); text-transform:uppercase; margin-top:4px}
+
+  /* ---------- орб ---------- */
+  .orb-wrap{position:relative; width:216px; height:216px; margin:auto 0; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent}
+  .orb-glow{position:absolute; inset:-40px; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, color-mix(in srgb, var(--accent) 45%, transparent), transparent 70%);
+    opacity:var(--glow); transition:background .4s;
+  }
+  .orb{
+    width:170px; height:170px; border-radius:50%; position:relative;
+    background:radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 30%, var(--raised)), var(--surface) 75%);
+    border:1.5px solid color-mix(in srgb, var(--accent) 55%, var(--outline));
+    box-shadow:inset 0 0 30px color-mix(in srgb, var(--accent) 25%, transparent);
+    display:flex; align-items:center; justify-content:center;
+    transition:background .4s, border-color .4s, transform .15s cubic-bezier(.3,1.4,.6,1);
+  }
+  .orb-wrap:active .orb{transform:scale(.95)}
+  .orb svg{width:44px; height:44px; stroke:var(--accent); transition:stroke .4s}
+  .orbit{position:absolute; inset:0; pointer-events:none}
+  .dot{position:absolute; top:50%; left:50%; width:9px; height:9px; border-radius:50%; background:var(--accent); transition:background .4s}
+  .bloom{position:absolute; inset:0; border-radius:50%; border:2px solid var(--accent); opacity:0; pointer-events:none}
+
+  .state-online .dot.d2,.state-online .dot.d3{opacity:0}
+  .state-connecting .dot{opacity:1}
+  .state-off .dot,.state-error .dot{opacity:0}
+
+  .status-label{font-family:'Unbounded',sans-serif; font-weight:600; font-size:18px; color:var(--text)}
+  .status-hint{font-size:13px; color:var(--muted); margin-top:4px; height:18px}
+
+  /* ---------- карточки ---------- */
+  .cards{width:100%; display:flex; flex-direction:column; gap:10px; padding-bottom:14px}
+  .card{
+    background:color-mix(in srgb, var(--surface) calc(var(--opacity)*100%), transparent);
+    border:1px solid var(--outline); padding:12px 16px;
+    border-radius:var(--radius-card); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  }
+  .stat-row{display:flex; gap:10px}
+  .stat-row .card{flex:1; text-align:center}
+  .stat-v{font-family:'JetBrains Mono',monospace; font-size:15px; color:var(--text)}
+  .stat-k{font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:1.1px; color:var(--muted); text-transform:uppercase; margin-top:3px}
+  .card-title{font-size:15px; font-weight:600; color:var(--text); margin-bottom:4px}
+  .mono{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted);
+    word-break:break-all; line-height:1.5;
+  }
+  .mono b{color:var(--accent); font-weight:500}
+  .copy{display:flex; align-items:center; justify-content:space-between; margin-top:6px}
+  .chipbtn{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.5px;
+    color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius:14px; padding:5px 12px; background:transparent; cursor:pointer;
+  }
+
+  .navbar{display:flex; justify-content:space-around; padding:10px 8px 18px; position:relative; z-index:2}
+  .nav-i{display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; color:var(--muted); cursor:pointer}
+  .nav-i.on{color:var(--accent)}
+  .nav-i svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8}
+
+  /* ---------- оверлей запуска ---------- */
+  .launch{
+    position:absolute; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,var(--bg),var(--bg-alt)); opacity:0; pointer-events:none;
+  }
+  .launch.play{opacity:1; transition:none}
+  .launch.hide{opacity:0; transition:opacity .3s}
+  .l-orb{width:88px;height:88px;border-radius:28px;background:var(--accent);opacity:0}
+  .l-ring{position:absolute;border:2px solid var(--accent);border-radius:50%;opacity:0}
+  .l-scan{position:absolute;left:0;right:0;top:0;height:2px;background:var(--accent);box-shadow:0 0 12px var(--accent);opacity:0}
+  .l-sq{position:absolute;inset:0}
+  .l-dot{width:18px;height:18px;border-radius:6px;display:inline-block;margin:5px;opacity:0}
+  .l-scanorb{width:56px;height:56px;border-radius:20px;background:var(--raised);border:1px solid var(--outline);position:relative}
+
+  /* ---------- панель ---------- */
+  .panel .grp{margin-bottom:18px}
+  .panel .lbl{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.1px; text-transform:uppercase; color:#7C889E; margin-bottom:8px}
+  .themes{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+  .tchip{
+    border:1px solid #223042; border-radius:14px; padding:8px 6px; cursor:pointer;
+    background:#0D121A; color:#EAF0F8; font-family:'Onest',sans-serif; font-size:11px;
+    display:flex; flex-direction:column; gap:6px; align-items:center;
+  }
+  .tchip.on{border-color:var(--online)}
+  .tchip .sw{display:flex; gap:3px}
+  .tchip .sw i{width:12px; height:12px; border-radius:4px; display:block}
+  .segs{display:flex; flex-wrap:wrap; gap:6px}
+  .seg{
+    font-size:12px; color:#7C889E; background:#0D121A; border:1px solid #223042;
+    border-radius:16px; padding:6px 13px; cursor:pointer; font-family:'Onest',sans-serif;
+  }
+  .seg.on{color:#EAF0F8; border-color:#5BF0C4; background:#12251f}
+  input[type=range]{width:100%; accent-color:#5BF0C4}
+  .toggle{display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px; color:#EAF0F8}
+  .toggle input{accent-color:#5BF0C4; width:16px; height:16px}
+  .replay{
+    width:100%; margin-top:2px; padding:11px; border-radius:18px; border:none; cursor:pointer;
+    font-family:'Onest',sans-serif; font-weight:600; font-size:14px;
+    background:#5BF0C4; color:#06080C;
+  }
+  .note{font-size:11px; color:#56637A; line-height:1.5; margin-top:16px}
+</style>
+</head>
+<body>
+
+<div class="side panel">
+  <h1>TG Pulse — просмотр дизайна</h1>
+  <div class="sub">Интерактивный предпросмотр: 8 тем, орб, стили и анимации запуска. Значения взяты из ui/Theme.kt и LaunchOverlay.kt.</div>
+
+  <div class="grp"><div class="lbl">Тема</div><div class="themes" id="themes"></div></div>
+  <div class="grp"><div class="lbl">Анимация запуска</div><div class="segs" id="anims"></div></div>
+  <div class="grp"><div class="lbl">Стиль карточек</div><div class="segs" id="cards"></div></div>
+  <div class="grp"><div class="lbl">Стиль кнопок</div><div class="segs" id="btns"></div></div>
+  <div class="grp"><div class="lbl">Свечение — <span id="gv">50%</span></div><input type="range" id="glow" min="0" max="100" value="50"></div>
+  <div class="grp"><div class="lbl">Прозрачность элементов — <span id="ov">100%</span></div><input type="range" id="opac" min="30" max="100" value="100"></div>
+  <div class="grp"><label class="toggle"><input type="checkbox" id="fx" checked> Фоновые эффекты</label></div>
+  <button class="replay" id="replay">▶ Проиграть анимацию запуска</button>
+  <div class="note">Клик по орбу переключает состояние: Выкл → Подключаемся → Подключено → Ошибка. Статус «Подключено» показывается только для реальной сессии — как в приложении.</div>
+</div>
+
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="bgfx" id="bgfx"><div class="blob b1"></div><div class="blob b2"></div></div>
+    <div class="statusbar"><span>9:41</span><span>TG PULSE</span><span>▮▮▮</span></div>
+    <div class="content">
+      <div class="app-title">TG Pulse</div>
+      <div class="app-sub" id="stateTag">Выключен</div>
+
+      <div class="orb-wrap" id="orbWrap" title="Нажми">
+        <div class="orb-glow"></div>
+        <div class="orbit">
+          <div class="dot d1" id="d1"></div><div class="dot d2" id="d2"></div><div class="dot d3" id="d3"></div>
+        </div>
+        <div class="orb">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+            <path d="M12 2v8"/><path d="M7 5.5a8 8 0 1 0 10 0"/>
+          </svg>
+        </div>
+        <div class="bloom" id="bloom"></div>
+      </div>
+
+      <div class="status-label" id="stateLbl">Выключен</div>
+      <div class="status-hint" id="stateHint">Нажми, чтобы запустить прокси</div>
+
+      <div class="cards">
+        <div class="stat-row">
+          <div class="card"><div class="stat-v" id="uptime">0:00</div><div class="stat-k">Время</div></div>
+          <div class="card"><div class="stat-v">1.2 МБ</div><div class="stat-k">Трафик</div></div>
+          <div class="card"><div class="stat-v">443</div><div class="stat-k">Порт</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ссылка прокси</div>
+          <div class="mono" id="link">tg://proxy?server=127.0.0.1&amp;port=443&amp;secret=<b>ee••••</b></div>
+          <div class="copy"><span class="mono" style="font-size:10px">WS POOL · CLOUDFLARE</span><button class="chipbtn">КОПИРОВАТЬ</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="navbar">
+      <div class="nav-i on"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>Главная</div>
+      <div class="nav-i"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Логи</div>
+      <div class="nav-i"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3m-3.6-6.4-2 2m-8.8 8.8-2 2m0-12.8 2 2m8.8 8.8 2 2"/></svg>Настройки</div>
+    </div>
+
+    <div class="launch" id="launch">
+      <div class="l-ring" id="lr0"></div>
+      <div class="l-ring" id="lr1"></div>
+      <div class="l-ring" id="lr2"></div>
+      <div class="l-orb" id="lOrb"></div>
+      <div class="l-scan" id="lScan"></div>
+      <div class="l-sq" id="lStagger" style="display:flex;align-items:center;justify-content:center">
+        <span class="l-dot" id="ld0"></span><span class="l-dot" id="ld1"></span><span class="l-dot" id="ld2"></span>
+      </div>
+      <div class="l-scanorb" id="lScanOrb" style="position:absolute"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Палитры — точные значения из app/src/main/java/com/tgwsmobile/proxy/ui/Theme.kt */
+const THEMES = {
+  Neon:      {bg:"#09060B",bgAlt:"#170A1E",surface:"#13090F",raised:"#1B0E17",outline:"#3A1B2D",text:"#FFEEF5",muted:"#A18694",online:"#FF4FA0",connecting:"#FF8AC4",error:"#FF5C7A",idle:"#5C4555",glass:false},
+  Midnight:  {bg:"#000000",bgAlt:"#000000",surface:"#0A0A0C",raised:"#131316",outline:"#232328",text:"#E8E8EA",muted:"#6E6E76",online:"#E8E8EA",connecting:"#9A9AA2",error:"#FF5C5C",idle:"#3C3C42",glass:false},
+  Aurora:    {bg:"#041018",bgAlt:"#0A1E2C",surface:"#0B1B26",raised:"#102534",outline:"#1E3D50",text:"#E4F6FF",muted:"#7FA0B2",online:"#66F0D6",connecting:"#7AB8FF",error:"#FF6F7D",idle:"#4A6577",glass:false},
+  Cyberpunk: {bg:"#0B0414",bgAlt:"#160A24",surface:"#140922",raised:"#1D0F31",outline:"#3D1E63",text:"#F6E9FF",muted:"#9E82BC",online:"#B44FFF",connecting:"#FF5CD0",error:"#FF4F6E",idle:"#594070",glass:false},
+  Ocean:     {bg:"#030B14",bgAlt:"#06182B",surface:"#081521",raised:"#0C1F31",outline:"#17364E",text:"#E2F1FB",muted:"#7C99AD",online:"#41B6F0",connecting:"#6ED0F5",error:"#FF6F7D",idle:"#48627A",glass:false},
+  Emerald:   {bg:"#050B08",bgAlt:"#050B08",surface:"#0A1410",raised:"#0F1D17",outline:"#1C3629",text:"#E6F6EC",muted:"#7FA38E",online:"#34D399",connecting:"#7BD8B4",error:"#FF6F7D",idle:"#4A6656",glass:false},
+  Minimal:   {bg:"#0E0E10",bgAlt:"#0E0E10",surface:"#161618",raised:"#1E1E21",outline:"#2B2B2F",text:"#ECECEE",muted:"#808086",online:"#D8D8DC",connecting:"#9C9CA4",error:"#FF5C5C",idle:"#44444A",glass:false},
+  Glass:     {bg:"#0A0E1A",bgAlt:"#141B33",surface:"rgba(18,26,46,.80)",raised:"rgba(27,37,64,.70)",outline:"rgba(255,255,255,.35)",text:"#F0F4FF",muted:"#97A3C0",online:"#7FA9FF",connecting:"#A9C6FF",error:"#FF6F7D",idle:"#5C6B8C",glass:true},
+};
+const ANIMS = ["Fade","Reveal","NeonPulse","Scan","Stagger","Quick","Off"];
+const ANIM_RU = {Fade:"Появление",Reveal:"Раскрытие",NeonPulse:"Пульс",Scan:"Скан",Stagger:"Каскад",Quick:"Быстрая",Off:"Выкл"};
+const CARD_STYLES = {Soft:"24px",Raised:"24px",Sharp:"6px",Glass:"24px"};
+const BTN_STYLES  = {Pill:{r:"32px",bw:0},Rounded:{r:"14px",bw:0},Outline:{r:"14px",bw:1.5},Glow:{r:"18px",bw:0}};
+
+let theme = "Emerald", anim = "Fade", cardStyle = "Soft", btnStyle = "Pill";
+let state = "off"; // off | connecting | online | error
+
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+
+function applyTheme(){
+  const p = THEMES[theme], cs = getComputedStyle(document.body);
+  for (const k of ["bg","bgAlt","surface","raised","outline","text","muted","online","connecting","error","idle"]) {
+    root.style.setProperty("--"+k.replace(/^[a-z]/, c=>c), p[k]);
+  }
+  root.style.setProperty("--bg",p.bg); root.style.setProperty("--bg-alt",p.bgAlt);
+  root.style.setProperty("--surface",p.surface); root.style.setProperty("--raised",p.raised);
+  root.style.setProperty("--outline",p.outline); root.style.setProperty("--text",p.text);
+  root.style.setProperty("--muted",p.muted); root.style.setProperty("--online",p.online);
+  root.style.setProperty("--connecting",p.connecting); root.style.setProperty("--error",p.error);
+  root.style.setProperty("--idle",p.idle);
+  root.style.setProperty("--radius-card", CARD_STYLES[cardStyle]);
+  root.style.setProperty("--radius-btn", BTN_STYLES[btnStyle].r);
+  document.querySelectorAll(".tchip").forEach(c=>c.classList.toggle("on", c.dataset.t===theme));
+}
+
+/* темы-чипы */
+const tw = $("themes");
+for (const [name,p] of Object.entries(THEMES)){
+  const b = document.createElement("button");
+  b.className = "tchip"; b.dataset.t = name;
+  b.innerHTML = `<span class="sw"><i style="background:${p.bg};border:1px solid ${p.outline}"></i><i style="background:${p.raised}"></i><i style="background:${p.online}"></i><i style="background:${p.connecting}"></i></span>${name}`;
+  b.onclick = ()=>{ theme = name; applyTheme(); };
+  tw.appendChild(b);
+}
+/* сегменты */
+function segs(id, names, ru, cur, fn){
+  const w = $(id);
+  for (const n of names){
+    const b = document.createElement("button");
+    b.className = "seg" + (n===cur?" on":""); b.textContent = ru ? ANIM_RU[n] : n;
+    b.onclick = ()=>{ fn(n); w.querySelectorAll(".seg").forEach(s=>s.classList.remove("on")); b.classList.add("on"); };
+    w.appendChild(b);
+  }
+}
+segs("anims", ANIMS, true, anim, n=>anim=n);
+segs("cards", Object.keys(CARD_STYLES), false, cardStyle, n=>{cardStyle=n; applyTheme();});
+segs("btns",  Object.keys(BTN_STYLES),  false, btnStyle,  n=>{btnStyle=n; applyTheme();});
+
+$("glow").oninput = e=>{ root.style.setProperty("--glow", e.target.value/100); $("gv").textContent = e.target.value+"%"; };
+$("opac").oninput = e=>{ root.style.setProperty("--opacity", e.target.value/100); $("ov").textContent = e.target.value+"%"; };
+$("fx").onchange = e=>{ $("bgfx").style.display = e.target.checked ? "block" : "none"; };
+
+/* орб: состояния и орбита */
+const STATUSES = {
+  off:        ["Выключен","Нажми, чтобы запустить прокси","idle"],
+  connecting: ["Подключаемся","Локальный порт слушается…","connecting"],
+  online:     ["Подключено","Сессия через WS pool активна","online"],
+  error:      ["Ошибка","Не удалось подключиться","error"],
+};
+let orbitAngle = 0, orbitRAF = null;
+function orbitTick(ts){
+  orbitAngle = (orbitAngle + 2.2) % 360;
+  placeDots(); orbitRAF = requestAnimationFrame(orbitTick);
+}
+function placeDots(){
+  const spread = state==="online" ? 0 : 46; // при онлайне сливаются в одну
+  ["d1","d2","d3"].forEach((c,i)=>{
+    const a = (orbitAngle + i*spread - 90) * Math.PI/180;
+    const R = 103;
+    $(c).style.transform = `translate(${Math.cos(a)*R}px, ${Math.sin(a)*R}px) translate(-50%,-50%)`;
+    $(c).style.opacity = state==="connecting" ? (i===0?1:.7) : state==="off"||state==="error" ? 0 : 1;
+  });
+}
+function setState(s){
+  state = s;
+  const [lbl,hint,v] = STATUSES[s];
+  $("stateLbl").textContent = lbl; $("stateHint").textContent = hint;
+  root.style.setProperty("--accent", getComputedStyle(root).getPropertyValue("--"+v));
+  $("orbWrap").className = "orb-wrap state-"+s;
+  if (s==="connecting" && !orbitRAF) orbitRAF = requestAnimationFrame(orbitTick);
+  if (s!=="connecting" && orbitRAF){ cancelAnimationFrame(orbitRAF); orbitRAF=null; }
+  if (s==="online"){ placeDots(); bloom(); }
+  if (s==="off"||s==="error"){ orbitAngle=0; placeDots(); }
+}
+function bloom(){
+  const b = $("bloom");
+  b.animate([{opacity:.9, transform:"scale(.6)"},{opacity:0, transform:"scale(1.7)"}],
+    {duration:900, easing:"cubic-bezier(.2,.8,.3,1)"});
+}
+$("orbWrap").onclick = ()=>{
+  setState({off:"connecting", connecting:"online", online:"off", error:"connecting"}[state]);
+};
+let upT = setInterval(()=>{ /* аптайм тикает при онлайне */
+  if (state!=="online") { $("uptime").textContent="0:00"; return; }
+  const el = $("uptime").textContent.split(":").map(Number);
+  let s = el[0]*60+el[1]+1;
+  $("uptime").textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+},1000);
+
+/* оверлей запуска: переигровка LaunchOverlay.kt */
+function playLaunch(){
+  if (anim==="Off" || anim==="Quick") return;
+  const L = $("launch");
+  L.classList.remove("hide"); L.classList.add("play");
+  ["lr0","lr1","lr2","lOrb","lScan","lStagger","lScanOrb"].forEach(id=>$(id).getAnimations().forEach(a=>a.cancel()));
+  const acc = getComputedStyle(root).getPropertyValue("--online");
+  const D = 900;
+  if (anim==="Fade"){
+    const o=$("lOrb"); o.style.display="block";
+    o.animate([{opacity:0,transform:"scale(.9)"},{opacity:1,transform:"scale(1)"}],{duration:D,fill:"forwards"});
+  } else if (anim==="Reveal"){
+    const o=$("lOrb"); o.style.display="block"; o.style.opacity=1;
+    o.animate([{clipPath:"circle(0% at 50% 50%)"},{clipPath:"circle(75% at 50% 50%)"}],{duration:D,fill:"forwards"});
+  } else if (anim==="NeonPulse"){
+    $("lOrb").style.display="none";
+    [0,1,2].forEach(i=>{
+      const r=$("lr"+i), sz=64+i*40;
+      Object.assign(r.style,{width:sz+"px",height:sz+"px",display:"block"});
+      r.animate([{opacity:[0,.9,0], transform:"scale(.8)"},{opacity:0, transform:"scale(1.2)"}],
+        {duration:D, delay:i*120, fill:"forwards"});
+    });
+  } else if (anim==="Scan"){
+    $("lOrb").style.display="none"; $("lScanOrb").style.display="block";
+    $("lScan").animate([{top:"8%",opacity:.8},{top:"92%",opacity:.8}],{duration:D,fill:"forwards",easing:"linear"});
+  } else if (anim==="Stagger"){
+    $("lOrb").style.display="none";
+    ["ld0","ld1","ld2"].forEach((id,i)=>{
+      $(id).style.background=[acc,getComputedStyle(root).getPropertyValue("--connecting"),getComputedStyle(root).getPropertyValue("--text")][i];
+      $(id).animate([{opacity:0},{opacity:1}],{duration:300, delay:i*300, fill:"forwards"});
+    });
+  }
+  setTimeout(()=>{ L.classList.remove("play"); L.classList.add("hide"); }, D);
+  setTimeout(()=>{ ["lr0","lr1","lr2","lScanOrb","ld0","ld1","ld2"].forEach(id=>$(id).style.display=""); }, D+350);
+}
+$("replay").onclick = playLaunch;
+
+applyTheme(); setState("off");
+setTimeout(playLaunch, 400);
+</script>
+</body>
+</html>

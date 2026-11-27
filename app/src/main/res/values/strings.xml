@@ -121,4 +121,9 @@
     <string name="gpt_proxy_hint">Applies to this tab only. Leave off to connect directly.</string>
     <string name="gpt_action_login">Sign in / register</string>
     <string name="gpt_action_reload">Reload chat</string>
+    <string name="gpt_prompts_section">Prompts</string>
+    <string name="gpt_prompt_selected">Selected</string>
+    <string name="gpt_prompt_select">Select</string>
+    <string name="gpt_load_error">Unable to load site. Check your connection or proxy and try again.</string>
+    <string name="gpt_reload">Reload</string>
 </resources>

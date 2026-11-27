@@ -121,4 +121,9 @@
     <string name="gpt_proxy_hint">Действует только для этой вкладки. Выключено — соединение напрямую.</string>
     <string name="gpt_action_login">Войти / зарегистрироваться</string>
     <string name="gpt_action_reload">Перезагрузить чат</string>
+    <string name="gpt_prompts_section">Промпты</string>
+    <string name="gpt_prompt_selected">Выбран</string>
+    <string name="gpt_prompt_select">Выбрать</string>
+    <string name="gpt_load_error">Не удалось загрузить сайт. Проверь интернет или прокси и попробуй снова.</string>
+    <string name="gpt_reload">Перезагрузить</string>
 </resources>

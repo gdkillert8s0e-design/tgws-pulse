@@ -10,14 +10,14 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -29,10 +29,10 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -116,25 +116,27 @@ fun ChatScreen(store: SettingsStore) {
     }
 
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            PromptBar(
-                settings = settings,
-                activePrompt = activePrompt,
-                onSelectPrompt = { activePrompt = it },
-                onGear = { gearOpen = true },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            GptWebView(
-                settings = settings,
-                activePrompt = activePrompt,
-                modifier = Modifier.fillMaxSize(),
-            )
+        GptWebView(
+            settings = settings,
+            activePrompt = activePrompt,
+            modifier = Modifier.fillMaxSize(),
+        )
+        // The only control over the chat: gear in the top-right corner. Prompts live inside it.
+        IconButton(
+            onClick = { gearOpen = true },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(4.dp),
+        ) {
+            Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.gpt_gear))
         }
         if (gearOpen) {
             GptGearSheet(
                 store = store,
                 settings = settings,
                 scope = scope,
+                activePrompt = activePrompt,
+                onSelectPrompt = { activePrompt = it },
                 onClose = { gearOpen = false },
                 modifier = Modifier.fillMaxSize(),
             )
@@ -143,49 +145,9 @@ fun ChatScreen(store: SettingsStore) {
 }
 
 @Composable
-private fun PromptBar(
-    settings: ProxySettings,
-    activePrompt: String,
-    onSelectPrompt: (String) -> Unit,
-    onGear: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            (GPT_PRESET_PROMPTS + settings.gptCustomPrompts).forEach { prompt ->
-                PromptChip(prompt, activePrompt, onSelectPrompt)
-            }
-        }
-        IconButton(onClick = onGear) {
-            Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.gpt_gear))
-        }
-    }
-}
-
-@Composable
-private fun PromptChip(prompt: String, activePrompt: String, onSelect: (String) -> Unit) {
-    AssistChip(
-        onClick = { onSelect(prompt) },
-        label = {
-            Text(prompt, maxLines = 1, style = MaterialTheme.typography.labelMedium)
-        },
-        border = BorderStroke(
-            width = if (prompt == activePrompt) 2.dp else 1.dp,
-            color = if (prompt == activePrompt) Palette.Online else Palette.Outline,
-        ),
-    )
-}
-
-@Composable
 private fun GptWebView(settings: ProxySettings, activePrompt: String, modifier: Modifier = Modifier) {
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var loadError by remember { mutableStateOf(false) }
     var pendingUpload by remember {
         mutableStateOf<android.webkit.ValueCallback<Array<Uri>>?>(null)
     }
@@ -213,12 +175,28 @@ private fun GptWebView(settings: ProxySettings, activePrompt: String, modifier: 
                     mediaPlaybackRequiresUserGesture = false
                     loadWithOverviewMode = true
                     useWideViewPort = true
+                    // Cloudflare on chatgpt.com blocks the WebView user agent ("; wv").
+                    // A plain Chrome UA lets the site load.
+                    userAgentString = userAgentString.replace("; wv", "")
                 }
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         // Keep everything in-app; only hand off non-http(s) schemes.
                         val scheme = request.url.scheme
                         return scheme != "http" && scheme != "https"
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView,
+                        request: WebResourceRequest,
+                        error: android.webkit.WebResourceError,
+                    ) {
+                        // Only main-frame failures mean the site did not load.
+                        if (request.isForMainFrame) loadError = true
+                    }
+
+                    override fun onPageFinished(view: WebView, url: String) {
+                        loadError = false
                     }
                 }
                 webChromeClient = object : WebChromeClient() {
@@ -242,6 +220,26 @@ private fun GptWebView(settings: ProxySettings, activePrompt: String, modifier: 
         },
         modifier = modifier,
     )
+
+    if (loadError) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .background(Palette.Surface)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(stringResource(R.string.gpt_load_error), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            Button(onClick = {
+                loadError = false
+                webView?.reload()
+            }) {
+                Text(stringResource(R.string.gpt_reload))
+            }
+        }
+    }
 }
 
 /** Injects [prompt] into the ChatGPT composer and presses send, retrying while the page loads. */
@@ -299,6 +297,8 @@ private fun GptGearSheet(
     store: SettingsStore,
     settings: ProxySettings,
     scope: CoroutineScope,
+    activePrompt: String,
+    onSelectPrompt: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -341,6 +341,35 @@ private fun GptGearSheet(
             )
         }
         Text(stringResource(R.string.gpt_auto_send_hint), style = MaterialTheme.typography.bodySmall)
+
+        Text(stringResource(R.string.gpt_prompts_section), style = MaterialTheme.typography.titleMedium)
+        (GPT_PRESET_PROMPTS + settings.gptCustomPrompts).forEach { prompt ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    prompt,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (prompt == activePrompt) Palette.Online else Palette.TextPrimary,
+                    modifier = Modifier.weight(1f),
+                )
+                if (prompt in settings.gptCustomPrompts) {
+                    IconButton(onClick = {
+                        save { it.copy(gptCustomPrompts = it.gptCustomPrompts - prompt) }
+                    }) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = stringResource(R.string.gpt_delete_prompt),
+                        )
+                    }
+                }
+                TextButton(onClick = { onSelectPrompt(prompt) }) {
+                    Text(
+                        stringResource(
+                            if (prompt == activePrompt) R.string.gpt_prompt_selected else R.string.gpt_prompt_select
+                        )
+                    )
+                }
+            }
+        }
 
         OutlinedTextField(
             value = newPrompt,
