@@ -26,12 +26,13 @@ android {
         applicationId = "com.tgwsmobile.proxy"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10000
-        versionName = "1.0.0"
+        versionCode = 13001
+        versionName = "1.3.1"
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
         ndk {
-            // Telegram phones are arm64; Chaquopy packages the Python runtime for this ABI only.
-            abiFilters += listOf("arm64-v8a")
+            // arm64 for current phones, armeabi-v7a for older (Android 7/8 era) 32-bit devices.
+            // Chaquopy ships 32-bit runtimes only for Python 3.11 and older, hence the pinned version below.
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
     }
 
@@ -84,7 +85,8 @@ android {
 
 chaquopy {
     defaultConfig {
-        version = "3.13"
+        // 3.11 is the newest Python Chaquopy still builds for 32-bit (armeabi-v7a) devices.
+        version = "3.11"
         (providers.gradleProperty("buildPython").orNull ?: localProps.getProperty("buildPython"))
             ?.let { buildPython(it) }
         pip {
