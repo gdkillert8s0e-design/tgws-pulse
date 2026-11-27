@@ -14,20 +14,31 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      # The app runs Chaquopy with Python 3.11 (the newest version with 32-bit ARM support),
-      # so the tests are executed on the same interpreter the device will use.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -r scripts/requirements-test.txt
+      - run: python scripts/run_python_tests.py
+
+  # The APK ships the Python 3.11 runtime (the newest Chaquopy supports for 32-bit ARM),
+  # so the app's own modules are exercised on that interpreter as well. The upstream
+  # h2 suite stays on 3.13 above: its idle/retry windows are patched down to 5-10 ms and
+  # one assertion depends on runner speed and test order, which a slow shared runner breaks.
+  python-tests-311:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: python -m pip install -r scripts/requirements-test.txt
-      # One retry: the upstream h2 tests patch their idle/retry windows down to 5-10 ms,
-      # which flakes on a loaded 2-core runner (reproduced under CPU contention, 1 in 10 runs).
-      # The assertion itself is never relaxed.
-      - run: python scripts/run_python_tests.py || python scripts/run_python_tests.py
+      - run: python -m pytest tests -q
+        env:
+          PYTHONPATH: upstream/flowseal:app/src/main/python
 
   android:
     runs-on: ubuntu-24.04
-    needs: python-tests
+    needs: [python-tests, python-tests-311]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
