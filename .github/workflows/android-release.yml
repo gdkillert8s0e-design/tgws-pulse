@@ -14,9 +14,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      # The app runs Chaquopy with Python 3.11 (the newest version with 32-bit ARM support),
+      # so the tests are executed on the same interpreter the device will use.
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.11"
       - run: python -m pip install -r scripts/requirements-test.txt
       - run: python scripts/run_python_tests.py
 
@@ -31,7 +33,7 @@ jobs:
           java-version: "21"
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.11"
       # The runner already ships the Android SDK. Accept licenses and install only
       # the packages this project needs. No third-party setup action is used.
       - name: Install Android SDK packages
@@ -47,10 +49,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify Flowseal core is unmodified except the documented AES patch
         run: python scripts/sync_upstream.py --check
+      # Chaquopy runs pip with a host interpreter of the target version; point it at the
+      # Python 3.11 installed above so the 32-bit (armeabi-v7a) runtime can be built.
       - name: JVM unit tests
-        run: chmod +x gradlew && ./gradlew :app:testDebugUnitTest
+        run: chmod +x gradlew && ./gradlew -PbuildPython="$(python -c 'import sys; print(sys.executable)')" :app:testDebugUnitTest
       - name: Build debug APK (signed automatically, installable)
-        run: ./gradlew :app:assembleDebug
+        run: ./gradlew -PbuildPython="$(python -c 'import sys; print(sys.executable)')" :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: tg-pulse-debug-apk
