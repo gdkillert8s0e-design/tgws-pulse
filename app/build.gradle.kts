@@ -26,8 +26,8 @@ android {
         applicationId = "com.tgwsmobile.proxy"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13001
-        versionName = "1.3.1"
+        versionCode = 13002
+        versionName = "1.3.2"
         buildConfigField("String", "CORE_VERSION", "\"$coreVersion\"")
         ndk {
             // arm64 for current phones, armeabi-v7a for older (Android 7/8 era) 32-bit devices.
