@@ -1,9 +1,11 @@
 package com.tgwsmobile.proxy.ui
 
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
@@ -38,6 +41,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,31 +119,35 @@ fun ChatScreen(store: SettingsStore) {
         applyGptProxy(settings)
     }
 
-    Box(Modifier.fillMaxSize()) {
-        GptWebView(
-            settings = settings,
-            activePrompt = activePrompt,
-            modifier = Modifier.fillMaxSize(),
-        )
-        // The only control over the chat: gear in the top-right corner. Prompts live inside it.
-        IconButton(
-            onClick = { gearOpen = true },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp),
-        ) {
-            Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.gpt_gear))
-        }
-        if (gearOpen) {
-            GptGearSheet(
-                store = store,
+    // Text and icons default to LocalContentColor (black unless a Surface sets it), which is
+    // invisible on our dark panels: pin it to the palette's primary text colour.
+    CompositionLocalProvider(LocalContentColor provides Palette.TextPrimary) {
+        Box(Modifier.fillMaxSize()) {
+            GptWebView(
                 settings = settings,
-                scope = scope,
                 activePrompt = activePrompt,
-                onSelectPrompt = { activePrompt = it },
-                onClose = { gearOpen = false },
                 modifier = Modifier.fillMaxSize(),
             )
+            // The only control over the chat: gear in the top-right corner. Prompts live inside it.
+            IconButton(
+                onClick = { gearOpen = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp),
+            ) {
+                Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.gpt_gear))
+            }
+            if (gearOpen) {
+                GptGearSheet(
+                    store = store,
+                    settings = settings,
+                    scope = scope,
+                    activePrompt = activePrompt,
+                    onSelectPrompt = { activePrompt = it },
+                    onClose = { gearOpen = false },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
     }
 }
@@ -164,7 +172,7 @@ private fun GptWebView(settings: ProxySettings, activePrompt: String, modifier: 
 
     AndroidView(
         factory = { ctx ->
-            WebView(ctx).apply {
+            WebView(ctx).apply webViewScope@ {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -175,9 +183,14 @@ private fun GptWebView(settings: ProxySettings, activePrompt: String, modifier: 
                     mediaPlaybackRequiresUserGesture = false
                     loadWithOverviewMode = true
                     useWideViewPort = true
-                    // Cloudflare on chatgpt.com blocks the WebView user agent ("; wv").
-                    // A plain Chrome UA lets the site load.
-                    userAgentString = userAgentString.replace("; wv", "")
+                    // Cloudflare on chatgpt.com rejects the stock WebView user agent
+                    // (the "; wv" and "Version/4.0" markers). A plain Chrome UA lets the site load.
+                    userAgentString = chromeLikeUserAgent(userAgentString)
+                }
+                // Login goes through auth.openai.com in an iframe; without third-party cookies it fails.
+                CookieManager.getInstance().apply {
+                    setAcceptCookie(true)
+                    setAcceptThirdPartyCookies(this@webViewScope, true)
                 }
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -449,6 +462,18 @@ private fun GptGearSheet(
         }
         Box(Modifier.padding(bottom = 24.dp))
     }
+}
+
+/**
+ * Rewrites the WebView user agent into a plain Chrome one. The stock string carries the
+ * "; wv" token and "Version/4.0", and Cloudflare on chatgpt.com answers those with
+ * "Unable to load site".
+ */
+private fun chromeLikeUserAgent(stock: String): String {
+    val chrome = Regex("Chrome/[0-9.]+").find(stock)?.value ?: "Chrome/120.0.0.0"
+    val model = Build.MODEL?.trim()?.takeIf { it.isNotEmpty() } ?: "Android"
+    return "Mozilla/5.0 (Linux; Android ${Build.VERSION.RELEASE}; $model) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) $chrome Mobile Safari/537.36"
 }
 
 /** Applies (or clears) a WebView-wide HTTP proxy for the ChatGPT tab. */
